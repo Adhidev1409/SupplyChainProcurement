@@ -24,8 +24,8 @@ export default function SuppliersListPage() {
   const filteredAndSortedSuppliers = useMemo(() => {
     let filtered = suppliers.filter(supplier => {
       const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRisk = !riskFilter || supplier.riskLevel.toLowerCase() === riskFilter;
-      const matchesCertification = !certificationFilter || 
+      const matchesRisk = !riskFilter || riskFilter === "all" || supplier.riskLevel.toLowerCase() === riskFilter;
+      const matchesCertification = !certificationFilter || certificationFilter === "all" ||
         (certificationFilter === "certified" && supplier.ISO14001) ||
         (certificationFilter === "not-certified" && !supplier.ISO14001);
       
@@ -96,7 +96,7 @@ export default function SuppliersListPage() {
                     <SelectValue placeholder="All Risk Levels" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Risk Levels</SelectItem>
+                    <SelectItem value="all">All Risk Levels</SelectItem>
                     <SelectItem value="low">Low Risk</SelectItem>
                     <SelectItem value="medium">Medium Risk</SelectItem>
                     <SelectItem value="high">High Risk</SelectItem>
@@ -110,7 +110,7 @@ export default function SuppliersListPage() {
                     <SelectValue placeholder="All Certifications" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Certifications</SelectItem>
+                    <SelectItem value="all">All Certifications</SelectItem>
                     <SelectItem value="certified">ISO 14001 Certified</SelectItem>
                     <SelectItem value="not-certified">Not Certified</SelectItem>
                   </SelectContent>

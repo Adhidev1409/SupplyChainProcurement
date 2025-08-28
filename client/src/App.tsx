@@ -12,6 +12,9 @@ import SuppliersListPage from "@/pages/suppliers-list";
 import SupplierDetailPage from "@/pages/supplier-detail";
 import SimulationPage from "@/pages/simulation";
 import SupplierPortalPage from "@/pages/supplier-portal";
+import WeightsConfigPage from "@/pages/weights-config";
+import QuestionnaireResultsPage from "@/pages/questionnaire-results";
+import RiskMapPage from "@/pages/risk-map";
 
 function Router() {
   return (
@@ -24,6 +27,9 @@ function Router() {
         <Route path="/procurement/suppliers" component={SuppliersListPage} />
         <Route path="/procurement/suppliers/:id" component={SupplierDetailPage} />
         <Route path="/procurement/simulator" component={SimulationPage} />
+        <Route path="/procurement/weights-config" component={WeightsConfigPage} />
+        <Route path="/procurement/questionnaire-results" component={QuestionnaireResultsPage} />
+        <Route path="/procurement/risk-map" component={RiskMapPage} />
         <Route path="/supplier" component={SupplierPortalPage} />
         <Route component={NotFound} />
       </Switch>

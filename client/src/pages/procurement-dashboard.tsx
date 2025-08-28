@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, CheckCircle, FileText } from "lucide-react";
+import { Link } from "wouter";
 import RiskDistributionChart from "@/components/charts/risk-distribution-chart";
 import ScoreDistributionChart from "@/components/charts/score-distribution-chart";
 import PerformanceRadarChart from "@/components/charts/performance-radar-chart";
@@ -50,21 +51,23 @@ export default function ProcurementDashboard() {
 
         {/* Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="shadow-lg" data-testid="card-total-suppliers">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-primary/10 rounded-lg mr-4">
-                  <Users className="w-6 h-6 text-primary" />
+          <Link href="/procurement/suppliers">
+            <Card className="shadow-lg cursor-pointer hover:shadow-xl transition-shadow" data-testid="card-total-suppliers">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-primary/10 rounded-lg mr-4">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Suppliers</p>
+                    <p className="text-2xl font-bold" data-testid="text-total-suppliers">
+                      {metrics?.totalSuppliers || 0}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Suppliers</p>
-                  <p className="text-2xl font-bold" data-testid="text-total-suppliers">
-                    {metrics?.totalSuppliers || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
           
           <Card className="shadow-lg" data-testid="card-avg-score">
             <CardContent className="p-6">
@@ -120,15 +123,51 @@ export default function ProcurementDashboard() {
           </Card>
         </div>
 
-        {/* Average Performance Radar Chart */}
-        <Card className="shadow-lg" data-testid="chart-performance-radar">
-          <CardHeader>
-            <CardTitle>Average Performance by Metric</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PerformanceRadarChart suppliers={suppliers} />
-          </CardContent>
-        </Card>
+        {/* Top Suppliers Ranking and Average Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <Card className="shadow-lg" data-testid="top-suppliers-ranking">
+            <CardHeader>
+              <CardTitle>Top Suppliers by Sustainability Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {suppliers
+                  .sort((a, b) => b.sustainabilityScore - a.sustainabilityScore)
+                  .slice(0, 5)
+                  .map((supplier, index) => (
+                    <Link key={supplier.id} href={`/procurement/suppliers/${supplier.id}`}>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" data-testid={`top-supplier-${index}`}>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                            index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-primary'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm" data-testid={`supplier-name-${index}`}>{supplier.name}</p>
+                            <p className="text-xs text-muted-foreground">{supplier.location}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-accent" data-testid={`supplier-score-${index}`}>{supplier.sustainabilityScore}</p>
+                          <p className="text-xs text-muted-foreground">Score</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg" data-testid="chart-performance-radar">
+            <CardHeader>
+              <CardTitle>Average Performance by Metric</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PerformanceRadarChart suppliers={suppliers} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

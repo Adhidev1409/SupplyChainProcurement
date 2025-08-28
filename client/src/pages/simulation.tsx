@@ -62,7 +62,7 @@ export default function SimulationPage() {
             <CardTitle>Simulation Parameters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <Label>Current Supplier</Label>
                 <Select value={currentSupplierId} onValueChange={setCurrentSupplierId}>
@@ -93,6 +93,10 @@ export default function SimulationPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            
+            {/* Additional Parameters Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <Label htmlFor="order-quantity">Order Quantity (units)</Label>
                 <Input
@@ -103,6 +107,33 @@ export default function SimulationPage() {
                   onChange={(e) => setOrderQuantity(e.target.value)}
                   data-testid="input-order-quantity"
                 />
+              </div>
+              <div>
+                <Label htmlFor="contract-length">Contract Length (years)</Label>
+                <Select defaultValue="2">
+                  <SelectTrigger data-testid="select-contract-length">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 Year</SelectItem>
+                    <SelectItem value="2">2 Years</SelectItem>
+                    <SelectItem value="3">3 Years</SelectItem>
+                    <SelectItem value="5">5 Years</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Risk Tolerance</Label>
+                <Select defaultValue="medium">
+                  <SelectTrigger data-testid="select-risk-tolerance">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Conservative</SelectItem>
+                    <SelectItem value="medium">Balanced</SelectItem>
+                    <SelectItem value="high">Aggressive</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="mt-6">

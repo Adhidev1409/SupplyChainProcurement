@@ -7,10 +7,7 @@ export default function Navigation() {
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/procurement", label: "Dashboard" },
-    { href: "/procurement/suppliers", label: "Suppliers" },
     { href: "/procurement/simulator", label: "Simulator" },
-    { href: "/onboarding", label: "Onboarding" },
-    { href: "/supplier", label: "Supplier Portal" },
   ];
 
   return (

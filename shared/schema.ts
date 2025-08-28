@@ -10,6 +10,12 @@ export const suppliers = pgTable("suppliers", {
   waterUsage: integer("water_usage").notNull(),
   recyclingPolicy: boolean("recycling_policy").notNull().default(false),
   ISO14001: boolean("iso14001").notNull().default(false),
+  wasteReduction: integer("waste_reduction").notNull().default(0),
+  energyEfficiency: integer("energy_efficiency").notNull().default(0),
+  waterPolicy: boolean("water_policy").notNull().default(false),
+  sustainabilityReport: boolean("sustainability_report").notNull().default(false),
+  location: text("location").notNull().default("Unknown"),
+  employeeCount: integer("employee_count").notNull().default(0),
   riskScore: integer("risk_score").notNull(),
   historicalCarbon: jsonb("historical_carbon").$type<number[]>().notNull().default([]),
 });

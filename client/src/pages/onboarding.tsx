@@ -17,7 +17,8 @@ import { z } from "zod";
 const onboardingSchema = insertSupplierSchema.extend({
   companyName: z.string().min(1, "Company name is required"),
 }).omit({ 
-  historicalCarbon: true 
+  historicalCarbon: true,
+  riskScore: true 
 });
 
 type OnboardingForm = z.infer<typeof onboardingSchema>;
@@ -36,7 +37,12 @@ export default function OnboardingPage() {
       waterUsage: 0,
       ISO14001: false,
       recyclingPolicy: false,
-      riskScore: 0,
+      wasteReduction: 0,
+      energyEfficiency: 0,
+      waterPolicy: false,
+      sustainabilityReport: false,
+      location: "",
+      employeeCount: 0,
     },
   });
 
@@ -65,6 +71,12 @@ export default function OnboardingPage() {
         waterUsage: data.waterUsage,
         ISO14001: data.ISO14001,
         recyclingPolicy: data.recyclingPolicy,
+        wasteReduction: data.wasteReduction,
+        energyEfficiency: data.energyEfficiency,
+        waterPolicy: data.waterPolicy,
+        sustainabilityReport: data.sustainabilityReport,
+        location: data.location,
+        employeeCount: data.employeeCount,
         riskScore,
         historicalCarbon,
       };
@@ -89,10 +101,10 @@ export default function OnboardingPage() {
     },
   });
 
-  const progress = (currentStep / 5) * 100;
+  const progress = (currentStep / 10) * 100;
 
   const nextStep = () => {
-    if (currentStep < 5) {
+    if (currentStep < 10) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -121,7 +133,7 @@ export default function OnboardingPage() {
             <div className="mt-8">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-muted-foreground" data-testid="step-indicator">
-                  Step {currentStep} of 5
+                  Step {currentStep} of 10
                 </span>
                 <span className="text-sm font-medium text-muted-foreground" data-testid="progress-percent">
                   {Math.round(progress)}%
@@ -240,6 +252,113 @@ export default function OnboardingPage() {
                 </div>
               )}
 
+              {/* Step 6: Water Policy */}
+              {currentStep === 6 && (
+                <div className="space-y-4" data-testid="step-6">
+                  <h2 className="text-xl font-semibold">Do you have a publicly available water policy?</h2>
+                  <RadioGroup
+                    value={form.watch("waterPolicy")?.toString()}
+                    onValueChange={(value) => form.setValue("waterPolicy", value === "true")}
+                    data-testid="radio-water-policy"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="true" id="water-policy-yes" />
+                      <Label htmlFor="water-policy-yes">Yes</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="false" id="water-policy-no" />
+                      <Label htmlFor="water-policy-no">No</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Step 7: Waste Reduction */}
+              {currentStep === 7 && (
+                <div className="space-y-4" data-testid="step-7">
+                  <h2 className="text-xl font-semibold">What percentage of waste do you reduce annually?</h2>
+                  <div>
+                    <Label htmlFor="wasteReduction">Waste Reduction (%)</Label>
+                    <Input
+                      id="wasteReduction"
+                      type="number"
+                      min="0"
+                      max="100"
+                      {...form.register("wasteReduction", { valueAsNumber: true })}
+                      placeholder="Enter percentage (0-100)"
+                      data-testid="input-waste-reduction"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 8: Energy Efficiency */}
+              {currentStep === 8 && (
+                <div className="space-y-4" data-testid="step-8">
+                  <h2 className="text-xl font-semibold">What is your energy efficiency rating?</h2>
+                  <div>
+                    <Label htmlFor="energyEfficiency">Energy Efficiency (%)</Label>
+                    <Input
+                      id="energyEfficiency"
+                      type="number"
+                      min="0"
+                      max="100"
+                      {...form.register("energyEfficiency", { valueAsNumber: true })}
+                      placeholder="Enter percentage (0-100)"
+                      data-testid="input-energy-efficiency"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 9: Sustainability Report */}
+              {currentStep === 9 && (
+                <div className="space-y-4" data-testid="step-9">
+                  <h2 className="text-xl font-semibold">Do you publish annual sustainability reports?</h2>
+                  <RadioGroup
+                    value={form.watch("sustainabilityReport")?.toString()}
+                    onValueChange={(value) => form.setValue("sustainabilityReport", value === "true")}
+                    data-testid="radio-sustainability-report"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="true" id="report-yes" />
+                      <Label htmlFor="report-yes">Yes</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="false" id="report-no" />
+                      <Label htmlFor="report-no">No</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Step 10: Company Details */}
+              {currentStep === 10 && (
+                <div className="space-y-4" data-testid="step-10">
+                  <h2 className="text-xl font-semibold">Company Details</h2>
+                  <div>
+                    <Label htmlFor="location">Company Location</Label>
+                    <Input
+                      id="location"
+                      {...form.register("location")}
+                      placeholder="Enter company location (e.g., California, USA)"
+                      data-testid="input-location"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="employeeCount">Number of Employees</Label>
+                    <Input
+                      id="employeeCount"
+                      type="number"
+                      min="1"
+                      {...form.register("employeeCount", { valueAsNumber: true })}
+                      placeholder="Enter number of employees"
+                      data-testid="input-employee-count"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Form Navigation */}
               <div className="flex justify-between mt-8">
                 <Button
@@ -252,7 +371,7 @@ export default function OnboardingPage() {
                   Previous
                 </Button>
                 
-                {currentStep < 5 ? (
+                {currentStep < 10 ? (
                   <Button 
                     type="button" 
                     onClick={nextStep}

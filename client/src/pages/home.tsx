@@ -15,29 +15,101 @@ export default function HomePage() {
           </p>
           
           {/* Call-to-Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <Link href="/procurement">
               <button 
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 rounded-lg text-lg font-semibold transition-colors shadow-lg"
                 data-testid="button-procurement"
               >
-                Enter Procurement Dashboard
+                <div className="text-center">
+                  <div className="text-xl mb-2">📊 Procurement Dashboard</div>
+                  <div className="text-sm opacity-90">View sustainability metrics and supplier analytics</div>
+                </div>
+              </button>
+            </Link>
+            <Link href="/procurement/simulator">
+              <button 
+                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 rounded-lg text-lg font-semibold transition-colors shadow-lg"
+                data-testid="button-simulator"
+              >
+                <div className="text-center">
+                  <div className="text-xl mb-2">🎯 Impact Simulator</div>
+                  <div className="text-sm opacity-90">Compare environmental impact of suppliers</div>
+                </div>
+              </button>
+            </Link>
+          </div>
+          
+          {/* Secondary Actions */}
+          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto mt-12">
+            <Link href="/procurement/suppliers">
+              <button 
+                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
+                data-testid="button-suppliers"
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">📋 Supplier Directory</div>
+                  <div className="text-sm text-muted-foreground">Browse and filter suppliers</div>
+                </div>
+              </button>
+            </Link>
+            <Link href="/procurement/risk-map">
+              <button 
+                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
+                data-testid="button-risk-map"
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">🗺️ Risk Map</div>
+                  <div className="text-sm text-muted-foreground">Geographic risk assessment</div>
+                </div>
+              </button>
+            </Link>
+            <Link href="/procurement/questionnaire-results">
+              <button 
+                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
+                data-testid="button-questionnaire"
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">📊 Questionnaire Results</div>
+                  <div className="text-sm text-muted-foreground">Review supplier responses</div>
+                </div>
+              </button>
+            </Link>
+          </div>
+          
+          {/* Additional Tools */}
+          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto mt-8">
+            <Link href="/procurement/weights-config">
+              <button 
+                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
+                data-testid="button-weights"
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">⚖️ Scoring Weights</div>
+                  <div className="text-sm text-muted-foreground">Configure sustainability metrics</div>
+                </div>
               </button>
             </Link>
             <Link href="/supplier">
               <button 
-                className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg"
+                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
                 data-testid="button-supplier"
               >
-                Are you a Supplier?
+                <div className="text-center">
+                  <div className="text-lg mb-1">🏢 Supplier Portal</div>
+                  <div className="text-sm text-muted-foreground">View your performance metrics</div>
+                </div>
               </button>
             </Link>
             <Link href="/onboarding">
               <button 
-                className="w-full sm:w-auto bg-secondary hover:bg-secondary/80 text-secondary-foreground px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg border border-border"
+                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
                 data-testid="button-signup"
               >
-                New Supplier? Sign Up
+                <div className="text-center">
+                  <div className="text-lg mb-1">📝 New Supplier Registration</div>
+                  <div className="text-sm text-muted-foreground">Join our supplier network</div>
+                </div>
               </button>
             </Link>
           </div>
