@@ -1,0 +1,80 @@
+. The Full Application Shell & Data
+Build a single-page application (SPA) using React, Tailwind CSS, and React Router. The app should have a central data store as a JavaScript object (not a database) containing at least 10 dummy suppliers. Each supplier object must have these properties: id, name, carbonFootprint, waterUsage, recyclingPolicy (boolean), ISO14001 (boolean), riskScore, and an array for historicalCarbon.
+
+The app must have these primary routes: /, /onboarding, /procurement, /procurement/suppliers, /procurement/simulator, and /supplier.
+
+2. The Pages
+Page 1: Onboarding (/onboarding)
+Create a multi-step form to onboard a new supplier. It should have a progress indicator at the top. The form will ask these questions, one by one:
+
+What is your company's name?
+
+What is your total carbon footprint (in tons)?
+
+Do you have an ISO 14001 certification? (Yes/No)
+
+Do you have a publicly available water policy? (Yes/No)
+
+Do you have a recycling program? (Yes/No)
+
+On the final step, a "Submit" button should add the new supplier to the central data store.
+
+Page 2: Home (/)
+A simple landing page with a clean layout. It should have a large title like "Sustainable Supply Chain." Include three clear call-to-action buttons for navigation:
+
+"Enter Procurement Dashboard" (links to /procurement)
+
+"Are you a Supplier?" (links to /supplier)
+
+"New Supplier? Sign Up" (links to /onboarding)
+
+Page 3: Procurement Dashboard (/procurement)
+This page is for the procurement manager and should be heavily graph-oriented. It needs to provide a high-level overview of all suppliers.
+
+Display three large metric cards at the top:
+
+Total Suppliers
+
+Average Sustainability Score
+
+Certified Suppliers
+
+Graph 1: Risk Distribution (Doughnut Chart): Show the percentage of suppliers in "High," "Medium," and "Low" risk categories.
+
+Graph 2: Sustainability Score Distribution (Histogram): A bar chart showing the frequency of suppliers within different score ranges (e.g., 0-20, 21-40, etc.).
+
+Graph 3: Average Performance by Metric (Radar Chart): A radar chart visualizing the average score of all suppliers across key metrics like Carbon Footprint, Water Usage, and Recycling.
+
+Page 4: Supplier List & Ranking (/procurement/suppliers)
+A page to filter and sort the supplier list with a powerful visualization.
+
+Include a filterable and sortable table of all suppliers. The table should have columns for: Name, Sustainability Score, Risk Level, Carbon Footprint.
+
+Graph 4: Top vs. Bottom Performers (Horizontal Bar Chart): A bar chart highlighting the 5 best and 5 worst suppliers based on their sustainability score.
+
+Page 5: Supplier Detail (/procurement/suppliers/:id)
+A detailed report page for a single supplier.
+
+Graph 5: Performance Breakdown (Radar Chart): A radar chart showing the specific supplier's scores on different metrics (Carbon Footprint, Water Usage, Recycling Policy).
+
+Graph 6: Historical Footprint (Line Chart): A line chart showing the supplier's historicalCarbon data over time.
+
+Include a dynamic text section that provides personalized improvement recommendations based on the supplier's weaknesses.
+
+Page 6: Simulation (/procurement/simulator)
+A page for "what-if" analysis.
+
+Create two dropdowns: one for a "Current Supplier" and one for a "Prospective Supplier."
+
+Include an input for "Order Quantity."
+
+When a "Run Simulation" button is clicked, a Grouped Bar Chart should appear. This chart must directly compare the Carbon Footprint and Water Usage of both suppliers, visually representing the projected environmental savings based on the order quantity.
+
+Page 7: Supplier Portal (/supplier)
+A simplified page for suppliers to view their own data.
+
+Graph 7: My Performance Breakdown (Radar Chart): A radar chart that shows only the logged-in supplier's performance scores on each metric.
+
+Graph 8: My Historical Footprint (Line Chart): A line chart showing only the supplier's own historical data.
+
+Display a section with their specific improvement recommendations.
