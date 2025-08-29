@@ -14,40 +14,41 @@ export interface IStorage {
 }
 
 function calculateSustainabilityScore(supplier: Supplier): number {
-  let score = 100;
-  
+  let score = 70; // Start lower so bonuses don’t max out everyone
+
   // Carbon footprint penalty (higher = worse)
-  if (supplier.carbonFootprint > 3000) score -= 30;
-  else if (supplier.carbonFootprint > 2000) score -= 20;
+  if (supplier.carbonFootprint > 3000) score -= 25;
+  else if (supplier.carbonFootprint > 2000) score -= 18;
   else if (supplier.carbonFootprint > 1000) score -= 10;
-  
+
   // Water usage penalty (higher = worse)
   if (supplier.waterUsage > 2000) score -= 20;
   else if (supplier.waterUsage > 1500) score -= 15;
-  else if (supplier.waterUsage > 1000) score -= 10;
-  
+  else if (supplier.waterUsage > 1000) score -= 8;
+
   // Risk score penalty (higher = worse)
   if (supplier.riskScore > 70) score -= 25;
   else if (supplier.riskScore > 40) score -= 15;
-  else if (supplier.riskScore > 20) score -= 5;
-  
-  // Bonuses for good practices
-  if (supplier.recyclingPolicy) score += 10;
-  if (supplier.ISO14001) score += 15;
-  if (supplier.waterPolicy) score += 8;
-  if (supplier.sustainabilityReport) score += 12;
-  
+  else if (supplier.riskScore > 20) score -= 7;
+
+  // Bonuses for good practices (smaller than before)
+  if (supplier.recyclingPolicy) score += 6;
+  if (supplier.ISO14001) score += 10;
+  if (supplier.waterPolicy) score += 5;
+  if (supplier.sustainabilityReport) score += 8;
+
   // Energy efficiency bonus
-  if (supplier.energyEfficiency >= 80) score += 15;
-  else if (supplier.energyEfficiency >= 60) score += 10;
-  else if (supplier.energyEfficiency >= 40) score += 5;
-  
+  if (supplier.energyEfficiency >= 80) score += 10;
+  else if (supplier.energyEfficiency >= 60) score += 7;
+  else if (supplier.energyEfficiency >= 40) score += 3;
+
   // Waste reduction bonus
-  if (supplier.wasteReduction >= 80) score += 10;
-  else if (supplier.wasteReduction >= 60) score += 7;
-  else if (supplier.wasteReduction >= 40) score += 3;
-  
-  return Math.max(0, Math.min(100, score));
+  if (supplier.wasteReduction >= 80) score += 7;
+  else if (supplier.wasteReduction >= 60) score += 5;
+  else if (supplier.wasteReduction >= 40) score += 2;
+
+  // Keep within range
+  return Math.max(0, score);
 }
 
 function calculateRiskLevel(riskScore: number): 'Low' | 'Medium' | 'High' {

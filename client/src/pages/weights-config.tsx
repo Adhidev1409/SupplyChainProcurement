@@ -19,14 +19,14 @@ interface WeightConfig {
 export default function WeightsConfigPage() {
   const { toast } = useToast();
   const [weights, setWeights] = useState<WeightConfig>({
-    carbonFootprint: 30,
-    waterUsage: 20,
-    recyclingPolicy: 10,
+    carbonFootprint: 25,
+    waterUsage: 17,
+    recyclingPolicy: 8,
     ISO14001: 15,
     wasteReduction: 10,
-    energyEfficiency: 15,
-    waterPolicy: 8,
-    sustainabilityReport: 12,
+    energyEfficiency: 10,
+    waterPolicy: 6,
+    sustainabilityReport: 9,
   });
 
   const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
@@ -39,10 +39,10 @@ export default function WeightsConfigPage() {
   };
 
   const saveWeights = () => {
-    if (Math.abs(totalWeight - 120) > 5) {
+    if (Math.abs(totalWeight - 100) > 5) {
       toast({
         title: "Invalid Weight Configuration",
-        description: "Total weights should be approximately 120 points for optimal scoring.",
+        description: "Total weights should be approximately 100 points for optimal scoring.",
         variant: "destructive",
       });
       return;
@@ -56,14 +56,14 @@ export default function WeightsConfigPage() {
 
   const resetToDefaults = () => {
     setWeights({
-      carbonFootprint: 30,
-      waterUsage: 20,
-      recyclingPolicy: 10,
+      carbonFootprint: 25,
+      waterUsage: 17,
+      recyclingPolicy: 8,
       ISO14001: 15,
       wasteReduction: 10,
-      energyEfficiency: 15,
-      waterPolicy: 8,
-      sustainabilityReport: 12,
+      energyEfficiency: 10,
+      waterPolicy: 6,
+      sustainabilityReport: 9,
     });
   };
 
@@ -245,18 +245,18 @@ export default function WeightsConfigPage() {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium">Total Weight</span>
-                      <span className={`text-lg font-bold ${Math.abs(totalWeight - 120) <= 5 ? 'text-accent' : 'text-destructive'}`} data-testid="total-weight">
+                      <span className={`text-lg font-bold ${Math.abs(totalWeight - 100) <= 5 ? 'text-accent' : 'text-destructive'}`} data-testid="total-weight">
                         {totalWeight}
                       </span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div 
-                        className={`h-2 rounded-full transition-all ${Math.abs(totalWeight - 120) <= 5 ? 'bg-accent' : 'bg-destructive'}`}
-                        style={{ width: `${Math.min(100, (totalWeight / 120) * 100)}%` }}
+                        className={`h-2 rounded-full transition-all ${Math.abs(totalWeight - 100) <= 5 ? 'bg-accent' : 'bg-destructive'}`}
+                        style={{ width: `${Math.min(100, (totalWeight / 110) * 100)}%` }}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Target: ~120 points
+                      Target: ~100 points
                     </p>
                   </div>
 
