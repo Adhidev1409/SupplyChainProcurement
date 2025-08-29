@@ -1,71 +1,167 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+const fetchWeights = async (): Promise<WeightConfig> => {
+  const response = await fetch('/api/metric-weights');
+  if (!response.ok) {
+    throw new Error('Failed to fetch weights from the server.');
+  }
+  return response.json();
+};
+
+const saveWeightsApi = async (weights: WeightConfig): Promise<WeightConfig> => {
+  const response = await fetch('/api/metric-weights', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(weights),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to save weights');
+  }
+  return response.json();
+};
 
 interface WeightConfig {
   carbonFootprint: number;
   waterUsage: number;
   recyclingPolicy: number;
-  ISO14001: number;
+  iso14001: number;
   wasteReduction: number;
   energyEfficiency: number;
   waterPolicy: number;
   sustainabilityReport: number;
 }
 
+// export default function WeightsConfigPage() {
+//   const { toast } = useToast();
+//   const [weights, setWeights] = useState<WeightConfig>({
+//     carbonFootprint: 25,
+//     waterUsage: 17,
+//     recyclingPolicy: 8,
+//     iso14001: 15,
+//     wasteReduction: 10,
+//     energyEfficiency: 10,
+//     waterPolicy: 6,
+//     sustainabilityReport: 9,
+//   });
+
+//   const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+
+//   const updateWeight = (field: keyof WeightConfig, value: number[]) => {
+//     setWeights(prev => ({
+//       ...prev,
+//       [field]: value[0]
+//     }));
+//   };
+
 export default function WeightsConfigPage() {
+ 
   const { toast } = useToast();
-  const [weights, setWeights] = useState<WeightConfig>({
-    carbonFootprint: 25,
-    waterUsage: 17,
-    recyclingPolicy: 8,
-    ISO14001: 15,
-    wasteReduction: 10,
-    energyEfficiency: 10,
-    waterPolicy: 6,
-    sustainabilityReport: 9,
+  const queryClient = useQueryClient();
+
+  // Local state can be null initially, until data is loaded
+  const [weights, setWeights] = useState<WeightConfig | null>(null);
+
+  // Use `useQuery` to fetch the initial data
+  const { data: initialWeights, isLoading } = useQuery({
+    queryKey: ['metricWeights'],
+    queryFn: fetchWeights,
   });
 
-  const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+  // Use `useMutation` to handle saving the data
+  const saveMutation = useMutation({
+    mutationFn: saveWeightsApi,
+    onSuccess: () => {
+      toast({
+        title: "Weights Saved Successfully",
+        description: "The new configuration has been applied.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['metricWeights'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error Saving Weights",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
+  // This effect syncs the loaded data to our local state
+  useEffect(() => {
+    if (initialWeights) {
+      setWeights(initialWeights);
+    }
+  }, [initialWeights]);
+
+
+  // ... your `totalWeight` and `updateWeight` functions remain the same for now
+  const totalWeight = weights ? Object.values(weights).reduce((sum, weight) => sum + weight, 0) : 0;
+  
   const updateWeight = (field: keyof WeightConfig, value: number[]) => {
-    setWeights(prev => ({
-      ...prev,
-      [field]: value[0]
-    }));
+    setWeights(prev => (prev ? { ...prev, [field]: value[0] } : null));
   };
 
-  const saveWeights = () => {
+  // const saveWeights = () => {
+  //   if (Math.abs(totalWeight - 100) > 5) {
+  //     toast({
+  //       title: "Invalid Weight Configuration",
+  //       description: "Total weights should be approximately 100 points for optimal scoring.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   toast({
+  //     title: "Weights Saved Successfully",
+  //     description: "The new weight configuration has been applied to all supplier calculations.",
+  //   });
+  // };
+
+  // const resetToDefaults = () => {
+  //   setWeights({
+  //     carbonFootprint: 25,
+  //     waterUsage: 17,
+  //     recyclingPolicy: 8,
+  //     iso14001: 15,
+  //     wasteReduction: 10,
+  //     energyEfficiency: 10,
+  //     waterPolicy: 6,
+  //     sustainabilityReport: 9,
+  //   });
+  // };
+
+  const handleSaveWeights = () => {
+    if (!weights) return;
+
     if (Math.abs(totalWeight - 100) > 5) {
       toast({
         title: "Invalid Weight Configuration",
-        description: "Total weights should be approximately 100 points for optimal scoring.",
+        description: "Total weights should be approximately 100 points.",
         variant: "destructive",
       });
       return;
     }
-
-    toast({
-      title: "Weights Saved Successfully",
-      description: "The new weight configuration has been applied to all supplier calculations.",
-    });
+    saveMutation.mutate(weights);
   };
 
-  const resetToDefaults = () => {
-    setWeights({
-      carbonFootprint: 25,
-      waterUsage: 17,
-      recyclingPolicy: 8,
-      ISO14001: 15,
-      wasteReduction: 10,
-      energyEfficiency: 10,
-      waterPolicy: 6,
-      sustainabilityReport: 9,
-    });
+  const handleResetToDefaults = () => {
+    if (initialWeights) {
+      setWeights(initialWeights);
+    }
   };
+
+  if (isLoading || !weights) {
+    return <div className="p-8">Loading configuration...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -162,15 +258,15 @@ export default function WeightsConfigPage() {
                     <div>
                       <div className="flex justify-between mb-2">
                         <Label htmlFor="iso-weight">ISO 14001 Certification</Label>
-                        <span className="text-sm font-medium">{weights.ISO14001}%</span>
+                        <span className="text-sm font-medium">{weights.iso14001}%</span>
                       </div>
                       <Slider
                         id="iso-weight"
                         min={0}
                         max={25}
                         step={1}
-                        value={[weights.ISO14001]}
-                        onValueChange={(value) => updateWeight('ISO14001', value)}
+                        value={[weights.iso14001]}
+                        onValueChange={(value) => updateWeight('iso14001', value)}
                         data-testid="slider-iso"
                       />
                     </div>
@@ -223,10 +319,10 @@ export default function WeightsConfigPage() {
                 </div>
 
                 <div className="flex space-x-4 pt-6 border-t">
-                  <Button onClick={saveWeights} className="flex-1" data-testid="button-save-weights">
-                    Save Configuration
+                  <Button onClick={handleSaveWeights} className="flex-1" disabled={saveMutation.isPending}>
+                    {saveMutation.isPending ? "Saving..." : "Save Configuration"}
                   </Button>
-                  <Button onClick={resetToDefaults} variant="outline" data-testid="button-reset-weights">
+                  <Button onClick={handleResetToDefaults} variant="outline">
                     Reset to Defaults
                   </Button>
                 </div>

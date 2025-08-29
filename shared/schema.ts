@@ -3,6 +3,29 @@ import { pgTable, text, varchar, integer, boolean, jsonb } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const appSettings = pgTable("app_settings", {
+  // We use a text ID that we will hardcode to 'global' to ensure we only ever have one row.
+  id: text("id").primaryKey(), 
+  
+  // Individual columns for each metric for easy backend access
+  carbonFootprint: integer("carbon_footprint").notNull(),
+  waterUsage: integer("water_usage").notNull(),
+  wasteReduction: integer("waste_reduction").notNull(),
+  energyEfficiency: integer("energy_efficiency").notNull(),
+  iso14001: integer("iso14001").notNull(),
+  recyclingPolicy: integer("recycling_policy").notNull(),
+  waterPolicy: integer("water_policy").notNull(),
+  sustainabilityReport: integer("sustainability_report").notNull(),
+});
+
+export const weightsSchema = createInsertSchema(appSettings).omit({
+  id: true,
+});
+
+export type Weights = z.infer<typeof weightsSchema>;
+export type AppSettings = typeof appSettings.$inferSelect;
+export type InsertAppSettings = typeof appSettings.$inferInsert;
+
 export const suppliers = pgTable("suppliers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),

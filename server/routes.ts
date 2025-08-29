@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSupplierSchema } from "@shared/schema";
+import { insertSupplierSchema, weightsSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -78,6 +78,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete supplier" });
+    }
+  });
+
+  // Get the current metric weights
+  app.get("/api/metric-weights", async (req, res) => {
+    try {
+      const weights = await storage.getMetricWeights();
+      res.json(weights);
+    } catch (error) {
+      console.error("Failed to fetch metric weights:", error);
+      res.status(500).json({ message: "Failed to fetch metric weights" });
+    }
+  });
+
+  // Save/update the metric weights
+  app.post("/api/metric-weights", async (req, res) => {
+    try {
+      // Validate the incoming data against your Zod schema
+      const newWeights = weightsSchema.parse(req.body);
+      const savedWeights = await storage.saveMetricWeights(newWeights);
+      res.status(200).json(savedWeights);
+    } catch (error) {
+      // If validation fails, Zod throws an error we can catch
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid weights data", errors: error.errors });
+      }
+      // Handle other potential errors (e.g., database connection issue)
+      console.error("Failed to save metric weights:", error);
+      res.status(500).json({ message: "Failed to save metric weights" });
     }
   });
 
