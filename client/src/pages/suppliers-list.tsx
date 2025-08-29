@@ -137,10 +137,10 @@ export default function SuppliersListPage() {
         {/* Top vs Bottom Performers Chart */}
         <Card className="shadow-lg mb-8" data-testid="performers-chart">
           <CardHeader>
-            <CardTitle>Top vs. Bottom Performers</CardTitle>
+            <CardTitle>Supplier Scores</CardTitle>
           </CardHeader>
           <CardContent>
-            <PerformersChart suppliers={suppliers} />
+            <PerformersChart suppliers={filteredAndSortedSuppliers} />
           </CardContent>
         </Card>
 
