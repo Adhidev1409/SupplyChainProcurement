@@ -15,8 +15,8 @@ export default function PerformersChart({ suppliers }: PerformersChartProps) {
     .map(supplier => ({
       name: supplier.name.length > 15 ? supplier.name.substring(0, 15) + '...' : supplier.name,
       score: supplier.sustainabilityScore,
-      fill: supplier.sustainabilityScore >= 80 ? '#10b981' : 
-            supplier.sustainabilityScore >= 60 ? '#f59e0b' : '#ef4444'
+      fill: supplier.sustainabilityScore >= 75 ? '#10b981' : 
+            supplier.sustainabilityScore >= 50 ? '#f59e0b' : '#ef4444'
     }));
 
   return (

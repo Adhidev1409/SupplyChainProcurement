@@ -76,17 +76,19 @@ function calculateSustainabilityScore(supplier: Supplier, weights: Weights): num
 }
 
 function calculateRiskLevel(riskScore: number): 'Low' | 'Medium' | 'High' {
-  if (riskScore <= 30) return 'Low';
-  if (riskScore <= 60) return 'Medium';
+  if (riskScore >= 75) return 'Low';
+  if (riskScore >= 50) return 'Medium';
   return 'High';
 }
 
 // This function now requires weights to be passed in
 function addCalculatedFields(supplier: Supplier, weights: Weights): SupplierWithCalculated {
+  const sustainabilityScore = calculateSustainabilityScore(supplier, weights);
+
   return {
     ...supplier,
-    sustainabilityScore: calculateSustainabilityScore(supplier, weights),
-    riskLevel: calculateRiskLevel(supplier.riskScore),
+    sustainabilityScore,
+    riskLevel: calculateRiskLevel(sustainabilityScore), // 👈 switched here
   };
 }
 

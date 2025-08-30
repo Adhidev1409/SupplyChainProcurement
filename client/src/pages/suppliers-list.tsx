@@ -21,7 +21,17 @@ export default function SuppliersListPage() {
     queryKey: ["/api/suppliers"],
   });
 
+  function calculateRiskLevel(score: number): "Low" | "Medium" | "High" {
+  if (score >= 75) return "Low";
+  if (score >= 50) return "Medium";
+  return "High";
+}
+
   const filteredAndSortedSuppliers = useMemo(() => {
+    const recalculated = suppliers.map(supplier => ({
+    ...supplier,
+    riskLevel: calculateRiskLevel(supplier.sustainabilityScore), // 👈 frontend override
+  }));
     let filtered = suppliers.filter(supplier => {
       const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRisk = !riskFilter || riskFilter === "all" || supplier.riskLevel.toLowerCase() === riskFilter;
@@ -169,8 +179,8 @@ export default function SuppliersListPage() {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium text-sm ${
-                              supplier.sustainabilityScore >= 80 ? 'bg-accent' : 
-                              supplier.sustainabilityScore >= 60 ? 'bg-yellow-500' : 'bg-destructive'
+                              supplier.sustainabilityScore >= 75 ? 'bg-accent' : 
+                              supplier.sustainabilityScore >= 50 ? 'bg-yellow-500' : 'bg-destructive'
                             }`}>
                               {supplier.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase()}
                             </div>
@@ -185,16 +195,16 @@ export default function SuppliersListPage() {
                       <TableCell>
                         <div className="flex items-center">
                           <span className={`text-sm font-semibold ${
-                            supplier.sustainabilityScore >= 80 ? 'text-accent' : 
-                            supplier.sustainabilityScore >= 60 ? 'text-yellow-600' : 'text-destructive'
+                            supplier.sustainabilityScore >= 75 ? 'text-accent' : 
+                            supplier.sustainabilityScore >= 50 ? 'text-yellow-600' : 'text-destructive'
                           }`} data-testid={`text-score-${supplier.id}`}>
                             {supplier.sustainabilityScore}
                           </span>
                           <div className="ml-2 w-16 bg-muted rounded-full h-2">
                             <div 
                               className={`h-2 rounded-full ${
-                                supplier.sustainabilityScore >= 80 ? 'bg-accent' : 
-                                supplier.sustainabilityScore >= 60 ? 'bg-yellow-500' : 'bg-destructive'
+                                supplier.sustainabilityScore >= 75 ? 'bg-accent' : 
+                                supplier.sustainabilityScore >= 50 ? 'bg-yellow-500' : 'bg-destructive'
                               }`}
                               style={{ width: `${supplier.sustainabilityScore}%` }}
                             />
