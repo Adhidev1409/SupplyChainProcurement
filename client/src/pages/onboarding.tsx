@@ -14,9 +14,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 
-const onboardingSchema = insertSupplierSchema.extend({
-  companyName: z.string().min(1, "Company name is required"),
-}).omit({ 
+const onboardingSchema = insertSupplierSchema.omit({ 
   historicalCarbon: true,
   riskScore: true 
 });
