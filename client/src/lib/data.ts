@@ -1,32 +1,5 @@
 import { type SupplierWithCalculated } from "@shared/schema";
 
-export const SAMPLE_SUPPLIERS: SupplierWithCalculated[] = [
-  {
-    id: "1",
-    name: "GreenSupply Co.",
-    carbonFootprint: 1245,
-    waterUsage: 780,
-    recyclingPolicy: true,
-    ISO14001: true,
-    riskScore: 15,
-    sustainabilityScore: 85,
-    riskLevel: "Low",
-    historicalCarbon: [1400, 1350, 1300, 1280, 1245, 1200, 1180, 1160, 1140, 1120, 1100, 1080]
-  },
-  {
-    id: "2",
-    name: "EcoTech Industries",
-    carbonFootprint: 3890,
-    waterUsage: 2100,
-    recyclingPolicy: false,
-    ISO14001: false,
-    riskScore: 75,
-    sustainabilityScore: 45,
-    riskLevel: "High",
-    historicalCarbon: [4200, 4150, 4100, 4050, 4000, 3950, 3900, 3890, 3880, 3870, 3860, 3850]
-  }
-];
-
 export const generateRecommendations = (supplier: SupplierWithCalculated) => {
   const recommendations = [];
   

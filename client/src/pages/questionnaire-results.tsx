@@ -26,7 +26,7 @@ export default function QuestionnaireResultsPage() {
       name: supplier.name,
       location: supplier.location,
       completedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: Math.random() > 0.1 ? 'completed' : Math.random() > 0.5 ? 'pending' : 'incomplete',
+      status: "completed",
       responses: {
         carbonFootprint: supplier.carbonFootprint,
         waterUsage: supplier.waterUsage,
