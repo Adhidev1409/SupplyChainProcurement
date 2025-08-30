@@ -150,7 +150,17 @@ export default function WeightsConfigPage() {
       });
       return;
     }
-    saveMutation.mutate(weights);
+    saveMutation.mutate(weights, {
+    onSuccess: () => {
+      // Invalidate supplier and dashboard queries so they refetch with new weights
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      toast({
+        title: "Weights Saved Successfully",
+        description: "The new configuration has been applied.",
+      });
+    }
+  });
   };
 
   const handleResetToDefaults = () => {
