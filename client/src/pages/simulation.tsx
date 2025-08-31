@@ -14,25 +14,29 @@ export default function SimulationPage() {
   const [prospectiveSupplierId, setProspectiveSupplierId] = useState("");
   const [orderQuantity, setOrderQuantity] = useState("");
   const [simulationResult, setSimulationResult] = useState<any>(null);
+  const [contractLength, setContractLength] = useState("2");
+  const [riskTolerance, setRiskTolerance] = useState("medium");
 
   const { data: suppliers = [], isLoading } = useQuery<SupplierWithCalculated[]>({
     queryKey: ["/api/suppliers"],
   });
 
   const runSimulation = () => {
-    if (!currentSupplierId || !prospectiveSupplierId || !orderQuantity) {
-      return;
-    }
+  if (!currentSupplierId || !prospectiveSupplierId || !orderQuantity) {
+    return;
+  }
 
-    const result = calculateSimulation(
-      currentSupplierId, 
-      prospectiveSupplierId, 
-      parseInt(orderQuantity),
-      suppliers
-    );
-    
-    setSimulationResult(result);
-  };
+  const result = calculateSimulation(
+    currentSupplierId,
+    prospectiveSupplierId,
+    parseInt(orderQuantity),
+    suppliers,
+    parseInt(contractLength),           // ✅ new
+    riskTolerance as "low" | "medium" | "high"  // ✅ new
+  );
+
+  setSimulationResult(result);
+};
 
   if (isLoading) {
     return (
@@ -110,7 +114,7 @@ export default function SimulationPage() {
               </div>
               <div>
                 <Label htmlFor="contract-length">Contract Length (years)</Label>
-                <Select defaultValue="2">
+                <Select value={contractLength} onValueChange={setContractLength}>
                   <SelectTrigger data-testid="select-contract-length">
                     <SelectValue />
                   </SelectTrigger>
@@ -122,9 +126,10 @@ export default function SimulationPage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
                 <Label>Risk Tolerance</Label>
-                <Select defaultValue="medium">
+                <Select value={riskTolerance} onValueChange={setRiskTolerance}>
                   <SelectTrigger data-testid="select-risk-tolerance">
                     <SelectValue />
                   </SelectTrigger>
@@ -135,7 +140,6 @@ export default function SimulationPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
             <div className="mt-6">
               <Button 
                 onClick={runSimulation} 
@@ -145,6 +149,7 @@ export default function SimulationPage() {
               >
                 Run Simulation
               </Button>
+            </div>
             </div>
           </CardContent>
         </Card>

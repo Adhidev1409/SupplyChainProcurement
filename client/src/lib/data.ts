@@ -61,23 +61,47 @@ export const generateRecommendations = (supplier: SupplierWithCalculated) => {
   return recommendations.slice(0, 3); // Return max 3 recommendations
 };
 
-export const calculateSimulation = (currentSupplierId: string, prospectiveSupplierId: string, quantity: number, suppliers: SupplierWithCalculated[]) => {
+export const calculateSimulation = (
+  currentSupplierId: string,
+  prospectiveSupplierId: string,
+  quantity: number,
+  suppliers: SupplierWithCalculated[],
+  years: number,
+  riskTolerance: "low" | "medium" | "high"
+) => {
   const currentSupplier = suppliers.find(s => s.id === currentSupplierId);
   const prospectiveSupplier = suppliers.find(s => s.id === prospectiveSupplierId);
-  
+
   if (!currentSupplier || !prospectiveSupplier || !quantity) {
     return null;
   }
-  
-  const carbonSavings = ((currentSupplier.carbonFootprint - prospectiveSupplier.carbonFootprint) * quantity) / 1000;
-  const waterSavings = ((currentSupplier.waterUsage - prospectiveSupplier.waterUsage) * quantity) / 100;
-  const costImpact = (prospectiveSupplier.sustainabilityScore - currentSupplier.sustainabilityScore) * quantity * 10;
-  
+
+  // Base diffs per unit
+  const carbonDiffPerUnit = currentSupplier.carbonFootprint - prospectiveSupplier.carbonFootprint;
+  const waterDiffPerUnit = currentSupplier.waterUsage - prospectiveSupplier.waterUsage;
+  const costDiffPerUnit = prospectiveSupplier.sustainabilityScore - currentSupplier.sustainabilityScore;
+
+  // Adjust for contract length (scale impact over time)
+  const timeFactor = years;
+
+  // Adjust for risk tolerance (switch aggressiveness)
+  let riskMultiplier = 1;
+  if (riskTolerance === "low") riskMultiplier = 0.7;     // conservative projection
+  if (riskTolerance === "medium") riskMultiplier = 1;    // balanced
+  if (riskTolerance === "high") riskMultiplier = 1.3;    // aggressive expansion
+
+  // Final projections
+  const carbonSavings = Math.round((carbonDiffPerUnit * quantity * timeFactor * riskMultiplier) / 1000);
+  const waterSavings = Math.round((waterDiffPerUnit * quantity * timeFactor * riskMultiplier) / 100);
+  const costImpact = Math.round(costDiffPerUnit * quantity * timeFactor * 10 * riskMultiplier);
+
   return {
     currentSupplier,
     prospectiveSupplier,
-    carbonSavings: Math.round(carbonSavings),
-    waterSavings: Math.round(waterSavings),
-    costImpact: Math.round(costImpact),
+    carbonSavings,
+    waterSavings,
+    costImpact,
+    years,
+    riskTolerance
   };
 };
