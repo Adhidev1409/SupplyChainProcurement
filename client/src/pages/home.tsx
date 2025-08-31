@@ -1,147 +1,77 @@
-import { Link } from "wouter";
-import { BarChart, Globe, Zap } from "lucide-react";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Loader2, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30">
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+  const [, setLocation] = useLocation();
+
+  // Avoid calling `/api/auth/me` again — rely on app-level auth check.
+  const authData = null;
+  const isLoading = false;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-6xl font-bold text-foreground mb-6" data-testid="hero-title">
-            Sustainable Supply Chain
-          </h1>
-          <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto" data-testid="hero-description">
-            Optimize your procurement decisions with comprehensive sustainability analytics and supplier performance insights
-          </p>
-          
-          {/* Call-to-Action Buttons */}
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <Link href="/procurement">
-              <button 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 rounded-lg text-lg font-semibold transition-colors shadow-lg"
-                data-testid="button-procurement"
-              >
-                <div className="text-center">
-                  <div className="text-xl mb-2">📊 Procurement Dashboard</div>
-                  <div className="text-sm opacity-90">View sustainability metrics and supplier analytics</div>
-                </div>
-              </button>
-            </Link>
-            <Link href="/procurement/simulator">
-              <button 
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 rounded-lg text-lg font-semibold transition-colors shadow-lg"
-                data-testid="button-simulator"
-              >
-                <div className="text-center">
-                  <div className="text-xl mb-2">🎯 Impact Simulator</div>
-                  <div className="text-sm opacity-90">Compare environmental impact of suppliers</div>
-                </div>
-              </button>
-            </Link>
-          </div>
-          
-          {/* Secondary Actions */}
-          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto mt-12">
-            <Link href="/procurement/suppliers">
-              <button 
-                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
-                data-testid="button-suppliers"
-              >
-                <div className="text-center">
-                  <div className="text-lg mb-1">📋 Supplier Directory</div>
-                  <div className="text-sm text-muted-foreground">Browse and filter suppliers</div>
-                </div>
-              </button>
-            </Link>
-            <Link href="/procurement/risk-map">
-              <button 
-                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
-                data-testid="button-risk-map"
-              >
-                <div className="text-center">
-                  <div className="text-lg mb-1">🗺️ Risk Map</div>
-                  <div className="text-sm text-muted-foreground">Geographic risk assessment</div>
-                </div>
-              </button>
-            </Link>
-            <Link href="/procurement/questionnaire-results">
-              <button 
-                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
-                data-testid="button-questionnaire"
-              >
-                <div className="text-center">
-                  <div className="text-lg mb-1">📊 Questionnaire Results</div>
-                  <div className="text-sm text-muted-foreground">Review supplier responses</div>
-                </div>
-              </button>
-            </Link>
-          </div>
-          
-          {/* Additional Tools */}
-          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto mt-8">
-            <Link href="/procurement/weights-config">
-              <button 
-                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
-                data-testid="button-weights"
-              >
-                <div className="text-center">
-                  <div className="text-lg mb-1">⚖️ Scoring Weights</div>
-                  <div className="text-sm text-muted-foreground">Configure sustainability metrics</div>
-                </div>
-              </button>
-            </Link>
-            <Link href="/supplier">
-              <button 
-                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
-                data-testid="button-supplier"
-              >
-                <div className="text-center">
-                  <div className="text-lg mb-1">🏢 Supplier Portal</div>
-                  <div className="text-sm text-muted-foreground">View your performance metrics</div>
-                </div>
-              </button>
-            </Link>
-            <Link href="/onboarding">
-              <button 
-                className="w-full bg-card hover:bg-muted text-card-foreground px-6 py-4 rounded-lg font-medium transition-colors shadow border border-border"
-                data-testid="button-signup"
-              >
-                <div className="text-center">
-                  <div className="text-lg mb-1">📝 New Supplier Registration</div>
-                  <div className="text-sm text-muted-foreground">Join our supplier network</div>
-                </div>
-              </button>
-            </Link>
-          </div>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
         </div>
-        
-        {/* Feature Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mt-20">
-          <div className="bg-card rounded-lg p-8 shadow-lg border border-border" data-testid="feature-analytics">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
-              <BarChart className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-4">Advanced Analytics</h3>
-            <p className="text-muted-foreground">Comprehensive dashboards with real-time sustainability metrics and performance insights</p>
-          </div>
-          
-          <div className="bg-card rounded-lg p-8 shadow-lg border border-border" data-testid="feature-management">
-            <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-6">
-              <Globe className="w-6 h-6 text-accent" />
-            </div>
-            <h3 className="text-xl font-semibold mb-4">Supplier Management</h3>
-            <p className="text-muted-foreground">Streamlined onboarding and comprehensive supplier performance tracking</p>
-          </div>
-          
-          <div className="bg-card rounded-lg p-8 shadow-lg border border-border" data-testid="feature-simulation">
-            <div className="w-12 h-12 bg-secondary/50 rounded-lg flex items-center justify-center mb-6">
-              <Zap className="w-6 h-6 text-secondary-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-4">Impact Simulation</h3>
-            <p className="text-muted-foreground">What-if analysis tools for evaluating environmental impact of procurement decisions</p>
+      </div>
+    );
+  }
+
+  // If user is not authenticated, show login prompt
+  if (!authData?.user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            <h1 className="text-6xl font-bold text-foreground mb-6">
+              Sustainable Supply Chain
+            </h1>
+            <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
+              Optimize your procurement decisions with comprehensive sustainability analytics
+            </p>
+
+            <Card className="max-w-md mx-auto">
+              <CardHeader>
+                <CardTitle>Welcome</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  Please sign in to access the application.
+                </p>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="p-3 bg-muted rounded">
+                    <strong>Admin:</strong><br />
+                    admin / admin123
+                  </div>
+                  <div className="p-3 bg-muted rounded">
+                    <strong>Supplier:</strong><br />
+                    greensupply / supplier123
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setLocation("/login")}
+                  className="w-full"
+                  size="lg"
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null; // This shouldn't render if redirects work properly
 }

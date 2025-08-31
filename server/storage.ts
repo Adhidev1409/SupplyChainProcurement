@@ -1,19 +1,20 @@
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
-import { eq } from 'drizzle-orm';
-import { 
+import { eq, and } from 'drizzle-orm';
+import bcrypt from 'bcrypt';
+import {
   // --- TABLE OBJECTS (for Drizzle) ---
-  users, 
-  suppliers, 
+  users,
+  suppliers,
   appSettings,
 
   // --- TYPESCRIPT TYPES (for your code) ---
   type Weights,
-  type Supplier, 
-  type InsertSupplier, 
-  type SupplierWithCalculated, 
-  type User, 
-  type InsertUser 
+  type Supplier,
+  type InsertSupplier,
+  type SupplierWithCalculated,
+  type User,
+  type InsertUser
 } from "@shared/schema";
 
 // --- Database Connection ---
@@ -32,10 +33,13 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+  authenticateUser(username: string, password: string): Promise<User | null>;
+  getUsersByRole(role: string): Promise<User[]>;
+
   // Supplier methods
   getSupplier(id: string): Promise<SupplierWithCalculated | undefined>;
   getAllSuppliers(): Promise<SupplierWithCalculated[]>;
+  getSuppliersForUser(user: User): Promise<SupplierWithCalculated[]>;
   createSupplier(supplier: InsertSupplier): Promise<SupplierWithCalculated>;
   updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<SupplierWithCalculated | undefined>;
   deleteSupplier(id: string): Promise<boolean>;
@@ -102,8 +106,22 @@ export class DbStorage implements IStorage {
     return db.query.users.findFirst({ where: eq(users.username, username) });
   }
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    const result = await db.insert(users).values({
+      ...insertUser,
+      password: hashedPassword
+    }).returning();
     return result[0];
+  }
+  async authenticateUser(username: string, password: string): Promise<User | null> {
+    const user = await db.query.users.findFirst({ where: eq(users.username, username) });
+    if (!user) return null;
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    return isValidPassword ? user : null;
+  }
+  async getUsersByRole(role: string): Promise<User[]> {
+    return db.query.users.findMany({ where: eq(users.role, role) });
   }
 
   // --- Supplier methods (now use dynamic weights) ---
@@ -117,6 +135,23 @@ export class DbStorage implements IStorage {
     const weights = await this.getMetricWeights();
     const allSuppliers = await db.query.suppliers.findMany();
     return allSuppliers.map(supplier => addCalculatedFields(supplier, weights));
+  }
+
+  async getSuppliersForUser(user: User): Promise<SupplierWithCalculated[]> {
+    const weights = await this.getMetricWeights();
+
+    if (user.role === 'admin') {
+      // Admin sees all suppliers
+      return this.getAllSuppliers();
+    } else if (user.role === 'supplier' && user.supplierId) {
+      // Supplier users see only their own supplier data
+      const supplier = await db.query.suppliers.findFirst({
+        where: eq(suppliers.id, user.supplierId)
+      });
+      return supplier ? [addCalculatedFields(supplier, weights)] : [];
+    }
+
+    return [];
   }
 
   async createSupplier(insertSupplier: InsertSupplier): Promise<SupplierWithCalculated> {

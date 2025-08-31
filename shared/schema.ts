@@ -60,12 +60,27 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: varchar("role").notNull().default("supplier"), // 'admin' or 'supplier'
+  supplierId: varchar("supplier_id").references(() => suppliers.id), // Link to supplier for supplier users
+  email: text("email").notNull(),
+  createdAt: varchar("created_at").notNull().default(sql`now()`),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  role: true,
+  supplierId: true,
+  email: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Login schema for authentication
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type LoginData = z.infer<typeof loginSchema>;

@@ -44,8 +44,14 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      // When the auth endpoint returns 401, return null instead of throwing
+      // to avoid error states that can cause multiple components to
+      // refetch concurrently and produce an apparent infinite loop.
+      queryFn: getQueryFn({ on401: "returnNull" }),
+      // Disable automatic refetching on mount/window focus to prevent
+      // repeated calls to `/api/auth/me` during navigation and HMR.
       refetchInterval: false,
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       retry: false,

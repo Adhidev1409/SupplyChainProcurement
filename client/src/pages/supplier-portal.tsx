@@ -1,193 +1,300 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, Droplet, CheckCircle } from "lucide-react";
-import PerformanceRadarChart from "@/components/charts/performance-radar-chart";
-import HistoricalFootprintChart from "@/components/charts/historical-footprint-chart";
-import { generateRecommendations } from "@/lib/data";
-import { type SupplierWithCalculated } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Building,
+  MapPin,
+  Users,
+  Leaf,
+  Droplets,
+  Recycle,
+  Zap,
+  FileText,
+  TrendingUp,
+  AlertTriangle,
+  Shield,
+  CheckCircle
+} from "lucide-react";
+import { Link } from "wouter";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function SupplierPortalPage() {
-  // For demo purposes, we'll use the first supplier as the "logged-in" supplier
-  const { data: suppliers = [], isLoading } = useQuery<SupplierWithCalculated[]>({
-    queryKey: ["/api/suppliers"],
+  const { data: suppliers, isLoading } = useQuery({
+    queryKey: ["/api/my-suppliers"],
   });
-
-  const currentSupplier = suppliers.find(s => s.sustainabilityScore >= 80) || suppliers[0];
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-20">
-            <div className="text-lg">Loading supplier portal...</div>
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
-  if (!currentSupplier) {
+  const supplier = suppliers?.[0]; // Supplier users should only have one supplier
+
+  if (!supplier) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-20">
-            <div className="text-lg text-muted-foreground">No supplier data available</div>
-          </div>
+      <div className="p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Supplier Portal</h1>
+          <p className="text-gray-600 mb-6">No supplier information found.</p>
+          <Link href="/supplier/onboarding">
+            <Button>Complete Onboarding</Button>
+          </Link>
         </div>
       </div>
     );
   }
 
-  const recommendations = generateRecommendations(currentSupplier);
+  // Prepare chart data
+  const chartData = supplier.historicalCarbon?.map((value, index) => ({
+    month: `Month ${index + 1}`,
+    carbon: value,
+  })) || [];
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" data-testid="portal-title">
-            Supplier Portal
-          </h1>
-          <p className="text-muted-foreground">View your sustainability performance and track improvements</p>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Supplier Portal</h1>
+        <p className="text-gray-600 mt-2">View your company information and performance metrics</p>
+      </div>
 
-        {/* Supplier Info Card */}
-        <Card className="shadow-lg mb-8" data-testid="supplier-info-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      {/* Company Overview */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Building className="h-6 w-6" />
+            <span>Company Overview</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="flex items-center space-x-3">
+              <Building className="h-5 w-5 text-gray-400" />
               <div>
-                <h2 className="text-2xl font-bold mb-2" data-testid="supplier-name">
-                  {currentSupplier.name}
-                </h2>
-                <p className="text-muted-foreground">
-                  Supplier ID: <span data-testid="supplier-id">#{currentSupplier.id.slice(0, 8).toUpperCase()}</span>
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-accent mb-1" data-testid="sustainability-score">
-                  {currentSupplier.sustainabilityScore}
-                </div>
-                <div className="text-sm text-muted-foreground">Sustainability Score</div>
+                <p className="text-sm text-gray-600">Company Name</p>
+                <p className="font-semibold">{supplier.name}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Performance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="shadow-lg" data-testid="metric-carbon">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-primary/10 rounded-lg mr-4">
-                  <Leaf className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Carbon Footprint</p>
-                  <p className="text-2xl font-bold" data-testid="carbon-footprint">
-                    {currentSupplier.carbonFootprint.toLocaleString()} tons
-                  </p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <MapPin className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-600">Location</p>
+                <p className="font-semibold">{supplier.location}</p>
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-lg" data-testid="metric-water">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-accent/10 rounded-lg mr-4">
-                  <Droplet className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Water Usage</p>
-                  <p className="text-2xl font-bold" data-testid="water-usage">
-                    {currentSupplier.waterUsage.toLocaleString()} L
-                  </p>
-                </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Users className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-600">Employees</p>
+                <p className="font-semibold">{supplier.employeeCount}</p>
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-lg" data-testid="metric-risk">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-secondary/50 rounded-lg mr-4">
-                  <CheckCircle className="w-6 h-6 text-secondary-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Risk Level</p>
-                  <Badge 
-                    variant={currentSupplier.riskLevel === 'Low' ? 'default' : currentSupplier.riskLevel === 'Medium' ? 'secondary' : 'destructive'}
-                    data-testid="risk-level"
+            </div>
+            <div className="flex items-center space-x-3">
+              <TrendingUp className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-600">Sustainability Score</p>
+                <div className="flex items-center space-x-2">
+                  <p className="font-semibold">{supplier.sustainabilityScore}</p>
+                  <Badge
+                    variant={
+                      supplier.riskLevel === 'Low' ? 'secondary' :
+                      supplier.riskLevel === 'Medium' ? 'default' : 'destructive'
+                    }
                   >
-                    {currentSupplier.riskLevel}
+                    {supplier.riskLevel}
                   </Badge>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <Card className="shadow-lg" data-testid="my-performance-chart">
-            <CardHeader>
-              <CardTitle>My Performance Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PerformanceRadarChart suppliers={[currentSupplier]} />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg" data-testid="my-historical-chart">
-            <CardHeader>
-              <CardTitle>My Historical Carbon Footprint</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HistoricalFootprintChart supplier={currentSupplier} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* My Improvement Recommendations */}
-        <Card className="shadow-lg" data-testid="my-recommendations">
-          <CardHeader>
-            <CardTitle>Your Personalized Improvement Recommendations</CardTitle>
+      {/* Environmental Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Carbon Footprint</CardTitle>
+            <Leaf className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recommendations.map((rec, index) => (
-                <div 
-                  key={index}
-                  className={`border-l-4 pl-4 p-4 rounded ${
-                    rec.color === 'primary' ? 'border-primary bg-primary/5' :
-                    rec.color === 'accent' ? 'border-accent bg-accent/5' :
-                    rec.color === 'secondary' ? 'border-secondary bg-secondary/5' :
-                    'border-destructive bg-destructive/5'
-                  }`}
-                  data-testid={`my-recommendation-${index}`}
-                >
-                  <h3 className={`font-semibold mb-2 ${
-                    rec.color === 'primary' ? 'text-primary' :
-                    rec.color === 'accent' ? 'text-accent' :
-                    rec.color === 'secondary' ? 'text-secondary-foreground' :
-                    'text-destructive'
-                  }`}>
-                    {rec.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {rec.description}
-                  </p>
-                  <div className="mt-2">
-                    <Badge variant={rec.color === 'destructive' ? 'destructive' : 'outline'}>
-                      Priority: {rec.color === 'primary' ? 'High' : rec.color === 'accent' ? 'Medium' : 'Low'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <div className="text-2xl font-bold">{supplier.carbonFootprint}</div>
+            <p className="text-xs text-muted-foreground">tons per year</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Water Usage</CardTitle>
+            <Droplets className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{supplier.waterUsage.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">liters per month</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Waste Reduction</CardTitle>
+            <Recycle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{supplier.wasteReduction}%</div>
+            <p className="text-xs text-muted-foreground">annual reduction</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Energy Efficiency</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{supplier.energyEfficiency}%</div>
+            <p className="text-xs text-muted-foreground">efficiency rating</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Risk Score</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{supplier.riskScore}</div>
+            <p className="text-xs text-muted-foreground">out of 100</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Certifications and Policies */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Certifications & Policies</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-3 p-3 border rounded-lg">
+              {supplier.ISO14001 ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Shield className="h-5 w-5 text-gray-400" />
+              )}
+              <div>
+                <p className="font-medium">ISO 14001</p>
+                <p className="text-sm text-gray-600">
+                  {supplier.ISO14001 ? "Certified" : "Not certified"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 p-3 border rounded-lg">
+              {supplier.recyclingPolicy ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Recycle className="h-5 w-5 text-gray-400" />
+              )}
+              <div>
+                <p className="font-medium">Recycling Policy</p>
+                <p className="text-sm text-gray-600">
+                  {supplier.recyclingPolicy ? "Active" : "Not active"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 p-3 border rounded-lg">
+              {supplier.waterPolicy ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Droplets className="h-5 w-5 text-gray-400" />
+              )}
+              <div>
+                <p className="font-medium">Water Policy</p>
+                <p className="text-sm text-gray-600">
+                  {supplier.waterPolicy ? "Published" : "Not published"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 p-3 border rounded-lg">
+              {supplier.sustainabilityReport ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <FileText className="h-5 w-5 text-gray-400" />
+              )}
+              <div>
+                <p className="font-medium">Sustainability Report</p>
+                <p className="text-sm text-gray-600">
+                  {supplier.sustainabilityReport ? "Published" : "Not published"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Carbon Footprint History */}
+      {chartData.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Carbon Footprint History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="carbon"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/supplier/onboarding">
+              <Button>
+                <FileText className="mr-2 h-4 w-4" />
+                Update Profile
+              </Button>
+            </Link>
+            <Link href="/supplier/dashboard">
+              <Button variant="outline">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                View Dashboard
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
