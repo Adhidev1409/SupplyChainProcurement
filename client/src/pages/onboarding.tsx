@@ -261,6 +261,34 @@ export default function OnboardingPage() {
                     />
                   </div>
 
+                  <div className="flex flex-col space-y-2 pt-4 border-t">
+                    <h4 className="font-medium">Additional Sustainability Policies</h4>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="recyclingPolicy"
+                        checked={form.watch("recyclingPolicy")}
+                        onCheckedChange={(checked) => form.setValue("recyclingPolicy", !!checked)}
+                      />
+                      <Label htmlFor="recyclingPolicy">Has Recycling Policy</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="waterPolicy"
+                        checked={form.watch("waterPolicy")}
+                        onCheckedChange={(checked) => form.setValue("waterPolicy", !!checked)}
+                      />
+                      <Label htmlFor="waterPolicy">Has Water Management Policy</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="sustainabilityReport"
+                        checked={form.watch("sustainabilityReport")}
+                        onCheckedChange={(checked) => form.setValue("sustainabilityReport", !!checked)}
+                      />
+                      <Label htmlFor="sustainabilityReport">Publishes Sustainability Report</Label>
+                    </div>
+                  </div>
+
                   <div>
                     <Label htmlFor="laborPractices">Labor Practices Score (0-100)</Label>
                     <Input

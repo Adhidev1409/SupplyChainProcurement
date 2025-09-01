@@ -52,34 +52,31 @@ export interface IStorage {
 
 // --- NEW Dynamic Calculation Logic ---
 function calculateSustainabilityScore(supplier: Supplier, weights: Weights): number {
+  // --- Numeric metrics ---
+  const carbonScore = 100 - (Math.min(supplier.carbonFootprint, 4000) / 4000) * 100;
+  const waterScore = 100 - (Math.min(supplier.waterUsage, 2500) / 2500) * 100;
+  const energyEfficiencyScore = supplier.energyEfficiency;
+  const wasteReductionScore = supplier.wasteReduction ?? 0;
+
+  // --- Weighted sum ---
   let totalScore = 0;
-
-  // --- Normalize and Score Metrics (0-100) ---
-  // Lower is better for these, so we invert the score.
-  let carbonScore = 100 - (Math.min(supplier.carbonFootprint, 4000) / 4000) * 100;
-  let waterScore = 100 - (Math.min(supplier.waterUsage, 2500) / 2500) * 100;
-  // Higher is better for these, use direct values.
-  let energyEfficiencyScore = supplier.energyEfficiency;
-  let laborScore = supplier.laborPractices;
-  let wasteReductionScore = Math.max(0, Math.min(100, supplier.wasteReduction ?? 0));
-
-  // --- Apply the weights ---
   totalScore += (carbonScore / 100) * weights.carbonFootprint;
   totalScore += (waterScore / 100) * weights.waterUsage;
   totalScore += (energyEfficiencyScore / 100) * weights.energyEfficiency;
-  totalScore += (wasteReductionScore / 100) * (((weights as any).wasteReduction ?? 0) as number);
-  // Note: We're using existing weights from appSettings even though supplier schema changed
+  totalScore += (wasteReductionScore / 100) * (weights.wasteReduction ?? 0);
 
-  // --- Score Boolean Metrics ---
+  // --- Boolean metrics ---
   if (supplier.ISO14001) totalScore += weights.iso14001;
   if ((supplier as any).recyclingPolicy) totalScore += weights.recyclingPolicy;
   if ((supplier as any).waterPolicy) totalScore += weights.waterPolicy;
   if ((supplier as any).sustainabilityReport) totalScore += weights.sustainabilityReport;
 
-  // Ensure the final score is between 0 and 100
-  return Math.max(0, Math.min(100, Math.round(totalScore)));
-}
+  // --- Normalize to 100 based on total possible weight ---
+  const maxPossibleScore = Object.values(weights).reduce((sum, w) => sum + (w ?? 0), 0);
+  totalScore = (totalScore / maxPossibleScore) * 100;
 
+  return Math.round(totalScore);
+}
 function calculateRiskLevel(riskScore: number): 'Low' | 'Medium' | 'High' {
   if (riskScore >= 75) return 'Low';
   if (riskScore >= 50) return 'Medium';
