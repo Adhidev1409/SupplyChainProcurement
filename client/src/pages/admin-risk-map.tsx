@@ -1,392 +1,338 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
-import { getQueryFn } from "@/lib/queryClient";
-import { z } from "zod";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useState, useMemo } from "react";
+import { Link } from "wouter";
+import { MapPin, AlertTriangle, Shield, TrendingUp } from "lucide-react";
+import { type SupplierWithCalculated } from "@shared/schema";
 
-const onboardingSchema = z.object({
-  name: z.string().min(1, "Company name is required"),
-  productCategory: z.string().min(1, "Product category is required"),
-  carbonFootprint: z.number().min(0),
-  waterUsage: z.number().min(0),
-  wasteGeneration: z.number().min(0),
-  wasteReduction: z.number().min(0).max(100).optional().default(0),
-  energyEfficiency: z.number().min(0).max(100),
-  laborPractices: z.number().min(0).max(100),
-  transportCostPerUnit: z.number().min(0),
-  onTimeDelivery: z.number().min(0).max(100),
-  regulatoryFlags: z.number().min(0),
-  leadTimeDays: z.number().min(0),
-  ISO14001: z.boolean(),
-  recyclingPolicy: z.boolean().optional().default(false),
-  waterPolicy: z.boolean().optional().default(false),
-  sustainabilityReport: z.boolean().optional().default(false),
-});
+export default function AdminRiskMapPage() {
+  const [selectedRegion, setSelectedRegion] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
 
-type OnboardingForm = z.infer<typeof onboardingSchema>;
-
-export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [existingSupplierId, setExistingSupplierId] = useState<number | null>(null);
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const meQuery = useQuery({ queryKey: ["/api/auth/me"], queryFn: getQueryFn({ on401: "returnNull" }) });
-  const isSupplier = !!(meQuery.data && (meQuery.data as any).user && (meQuery.data as any).user.role === 'supplier');
-  const mySuppliersQuery = useQuery({
-    queryKey: ["/api/my-suppliers"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: isSupplier,
-    select: (d) => (Array.isArray((d as any)) ? (d as any) : []),
-  });
-  
-  const form = useForm<OnboardingForm>({
-    resolver: zodResolver(onboardingSchema),
-    defaultValues: {
-      name: "",
-      productCategory: "",
-      carbonFootprint: 0,
-      waterUsage: 0,
-      wasteGeneration: 0,
-      wasteReduction: 0,
-      energyEfficiency: 50,
-      laborPractices: 50,
-      transportCostPerUnit: 0,
-      onTimeDelivery: 80,
-      regulatoryFlags: 0,
-      leadTimeDays: 30,
-      ISO14001: false,
-      recyclingPolicy: false,
-      waterPolicy: false,
-      sustainabilityReport: false,
-    },
+  const { data: suppliers = [], isLoading } = useQuery<SupplierWithCalculated[]>({
+    queryKey: ["/api/suppliers"],
   });
 
-  const createSupplierMutation = useMutation({
-    mutationFn: async (data: OnboardingForm & { id?: number }) => {
-      // If an ID exists, update instead of creating (supplier self-update)
-      if ((data as any).id) {
-        const response = await apiRequest("PATCH", `/api/suppliers/${(data as any).id}`, data);
-        return response.json();
+  // Group suppliers by region and calculate regional risk metrics
+  const regionalData = useMemo(() => {
+    const regions = suppliers.reduce((acc, supplier) => {
+      // Use product category to determine mock region
+      const regionMap: { [key: string]: string } = {
+        'Electronics': 'Asia-Pacific',
+        'Textiles': 'Europe',
+        'Food': 'North America',
+        'Automotive': 'North America',
+        'Chemicals': 'Europe',
+        'Pharmaceuticals': 'Asia-Pacific'
+      };
+      const region = regionMap[supplier.productCategory] || 'Other';
+      if (!acc[region]) {
+        acc[region] = {
+          name: region,
+          suppliers: [],
+          avgScore: 0,
+          riskLevel: 'low' as const,
+          totalSuppliers: 0,
+        };
       }
+      acc[region].suppliers.push(supplier);
+      acc[region].totalSuppliers = acc[region].suppliers.length;
+      return acc;
+    }, {} as Record<string, {
+      name: string;
+      suppliers: SupplierWithCalculated[];
+      avgScore: number;
+      riskLevel: 'low' | 'medium' | 'high';
+      totalSuppliers: number;
+    }>);
 
-      const response = await apiRequest("POST", "/api/suppliers", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
-      toast({
-        title: "Supplier registered successfully!",
-        description: "Your company has been added to our supplier database.",
-      });
-      setLocation("/admin/suppliers");
-    },
-    onError: (error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    // Calculate metrics for each region
+    Object.values(regions).forEach(region => {
+      region.avgScore = region.suppliers.reduce((sum, s) => sum + s.sustainabilityScore, 0) / region.suppliers.length;
+      
+      // Determine risk level based on average score and risk factors
+      const highRiskCount = region.suppliers.filter(s => s.riskLevel === 'High').length;
+      const highRiskPercentage = highRiskCount / region.suppliers.length;
+      
+      if (highRiskPercentage > 0.4 || region.avgScore < 70) {
+        region.riskLevel = 'high';
+      } else if (highRiskPercentage > 0.2 || region.avgScore < 85) {
+        region.riskLevel = 'medium';
+      } else {
+        region.riskLevel = 'low';
+      }
+    });
 
-  const onSubmit = (data: OnboardingForm) => {
-    createSupplierMutation.mutate(existingSupplierId ? { ...data, id: existingSupplierId } : data);
+    return regions;
+  }, [suppliers]);
+
+  const filteredSuppliers = useMemo(() => {
+    return suppliers.filter(supplier => {
+      // Use same region mapping logic
+      const regionMap: { [key: string]: string } = {
+        'Electronics': 'Asia-Pacific',
+        'Textiles': 'Europe',
+        'Food': 'North America',
+        'Automotive': 'North America',
+        'Chemicals': 'Europe',
+        'Pharmaceuticals': 'Asia-Pacific'
+      };
+      const region = regionMap[supplier.productCategory] || 'Other';
+      const matchesRegion = selectedRegion === "all" || region === selectedRegion;
+      const matchesRisk = riskFilter === "all" || supplier.riskLevel === riskFilter;
+      return matchesRegion && matchesRisk;
+    });
+  }, [suppliers, selectedRegion, riskFilter]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-20">
+            <div className="text-lg">Loading risk map data...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const getRiskColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'high':
+        return 'bg-red-500';
+      case 'medium':
+        return 'bg-yellow-500';
+      case 'low':
+        return 'bg-green-500';
+      default:
+        return 'bg-gray-500';
+    }
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
-
-  const totalSteps = 4;
-  const progress = (currentStep / totalSteps) * 100;
-
-  // Prefill supplier data for supplier users
-  useEffect(() => {
-    if (isSupplier && Array.isArray(mySuppliersQuery.data) && mySuppliersQuery.data.length > 0) {
-      const s = mySuppliersQuery.data[0];
-      setExistingSupplierId(s.id);
-      form.reset({
-        name: s.name,
-        productCategory: s.productCategory,
-        carbonFootprint: s.carbonFootprint,
-        waterUsage: s.waterUsage,
-        wasteGeneration: s.wasteGeneration ?? 0,
-        wasteReduction: s.wasteReduction ?? 0,
-        energyEfficiency: s.energyEfficiency,
-        laborPractices: s.laborPractices,
-        transportCostPerUnit: s.transportCostPerUnit,
-        onTimeDelivery: s.onTimeDelivery,
-        regulatoryFlags: s.regulatoryFlags,
-        leadTimeDays: s.leadTimeDays,
-        ISO14001: s.ISO14001,
-        recyclingPolicy: s.recyclingPolicy ?? false,
-        waterPolicy: s.waterPolicy ?? false,
-        sustainabilityReport: s.sustainabilityReport ?? false,
-      });
+  const getRiskBadge = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'high':
+        return <Badge variant="destructive">High Risk</Badge>;
+      case 'medium':
+        return <Badge variant="secondary">Medium Risk</Badge>;
+      case 'low':
+        return <Badge variant="default">Low Risk</Badge>;
+      default:
+        return <Badge variant="outline">Completed</Badge>;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSupplier, mySuppliersQuery.data]);
+  };
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Supplier Onboarding</h1>
-          <p className="text-muted-foreground">
-            Complete the registration process to join our supplier network
-          </p>
-          <Progress value={progress} className="mt-4" />
-          <p className="text-sm text-muted-foreground mt-2">
-            Step {currentStep} of {totalSteps}
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="risk-map-title">
+            Geographic Risk Assessment
+          </h1>
+          <p className="text-gray-600">Analyze supplier sustainability risks by geographic region</p>
         </div>
 
-        <Card className="shadow-lg">
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="shadow-lg">
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">Filter by Region</label>
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger data-testid="select-region">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    {Object.keys(regionalData).map(region => (
+                      <SelectItem key={region} value={region}>{region}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-lg">
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">Filter by Risk Level</label>
+                <Select value={riskFilter} onValueChange={setRiskFilter}>
+                  <SelectTrigger data-testid="select-risk">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Risk Levels</SelectItem>
+                    <SelectItem value="High">High Risk</SelectItem>
+                    <SelectItem value="Medium">Medium Risk</SelectItem>
+                    <SelectItem value="Low">Low Risk</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Regional Overview Map */}
+        <Card className="shadow-lg mb-8" data-testid="regional-overview">
           <CardHeader>
-            <CardTitle>
-              {currentStep === 1 && "Company Information"}
-              {currentStep === 2 && "Environmental Metrics"}
-              {currentStep === 3 && "Operational Metrics"}
-              {currentStep === 4 && "Review & Submit"}
+            <CardTitle className="flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+              Regional Risk Overview
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {currentStep === 1 && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Company Name</Label>
-                    <Input
-                      id="name"
-                      {...form.register("name")}
-                      placeholder="Enter company name"
-                    />
-                    {form.formState.errors.name && (
-                      <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="productCategory">Product Category</Label>
-                    <Select
-                      value={form.watch("productCategory")}
-                      onValueChange={(value) => form.setValue("productCategory", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select product category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="electronics">Electronics</SelectItem>
-                        <SelectItem value="textiles">Textiles</SelectItem>
-                        <SelectItem value="automotive">Automotive</SelectItem>
-                        <SelectItem value="food">Food & Beverage</SelectItem>
-                        <SelectItem value="chemicals">Chemicals</SelectItem>
-                        <SelectItem value="packaging">Packaging</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.productCategory && (
-                      <p className="text-sm text-destructive mt-1">{form.formState.errors.productCategory.message}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 2 && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="carbonFootprint">Carbon Footprint (tons CO2/year)</Label>
-                    <Input
-                      id="carbonFootprint"
-                      type="number"
-                      {...form.register("carbonFootprint", { valueAsNumber: true })}
-                      placeholder="Enter annual carbon footprint"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="waterUsage">Water Usage (liters/year)</Label>
-                    <Input
-                      id="waterUsage"
-                      type="number"
-                      {...form.register("waterUsage", { valueAsNumber: true })}
-                      placeholder="Enter annual water usage"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="wasteGeneration">Waste Generation (tons/year)</Label>
-                    <Input
-                      id="wasteGeneration"
-                      type="number"
-                      {...form.register("wasteGeneration", { valueAsNumber: true })}
-                      placeholder="Enter annual waste generation"
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="ISO14001"
-                      checked={form.watch("ISO14001")}
-                      onCheckedChange={(checked) => form.setValue("ISO14001", !!checked)}
-                    />
-                    <Label htmlFor="ISO14001">ISO 14001 Certified</Label>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="energyEfficiency">Energy Efficiency Score (0-100)</Label>
-                    <Input
-                      id="energyEfficiency"
-                      type="number"
-                      min="0"
-                      max="100"
-                      {...form.register("energyEfficiency", { valueAsNumber: true })}
-                      placeholder="Enter energy efficiency score"
-                    />
-                  </div>
-
-                  <div className="flex flex-col space-y-2 pt-4 border-t">
-                    <h4 className="font-medium">Additional Sustainability Policies</h4>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="recyclingPolicy"
-                        checked={form.watch("recyclingPolicy")}
-                        onCheckedChange={(checked) => form.setValue("recyclingPolicy", !!checked)}
-                      />
-                      <Label htmlFor="recyclingPolicy">Has Recycling Policy</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.values(regionalData).map((region) => (
+                <div
+                  key={region.name}
+                  className="border-2 border-gray-200 rounded-lg p-6 hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-pointer bg-white"
+                  onClick={() => setSelectedRegion(region.name)}
+                  data-testid={`region-card-${region.name.replace(/\s+/g, '-').toLowerCase()}`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <MapPin className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900">{region.name}</h3>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="waterPolicy"
-                        checked={form.watch("waterPolicy")}
-                        onCheckedChange={(checked) => form.setValue("waterPolicy", !!checked)}
-                      />
-                      <Label htmlFor="waterPolicy">Has Water Management Policy</Label>
+                    {getRiskBadge(region.riskLevel)}
+                  </div>
+                  
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Suppliers:</span>
+                      <span className="font-semibold text-gray-900">{region.totalSuppliers}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="sustainabilityReport"
-                        checked={form.watch("sustainabilityReport")}
-                        onCheckedChange={(checked) => form.setValue("sustainabilityReport", !!checked)}
-                      />
-                      <Label htmlFor="sustainabilityReport">Publishes Sustainability Report</Label>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Avg Score:</span>
+                      <span className="font-semibold text-green-600">{Math.round(region.avgScore)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Risk Factors:</span>
+                      <div className="flex space-x-1">
+                        {region.suppliers.filter(s => s.riskLevel === 'High').length > 0 && (
+                          <AlertTriangle className="w-4 h-4 text-red-500" />
+                        )}
+                        {region.suppliers.some(s => !s.ISO14001) && (
+                          <Shield className="w-4 h-4 text-yellow-500" />
+                        )}
+                        {region.suppliers.some(s => s.carbonFootprint > 1000) && (
+                          <TrendingUp className="w-4 h-4 text-orange-500" />
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  <div>
-                    <Label htmlFor="laborPractices">Labor Practices Score (0-100)</Label>
-                    <Input
-                      id="laborPractices"
-                      type="number"
-                      min="0"
-                      max="100"
-                      {...form.register("laborPractices", { valueAsNumber: true })}
-                      placeholder="Enter labor practices score"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="transportCostPerUnit">Transport Cost per Unit ($)</Label>
-                    <Input
-                      id="transportCostPerUnit"
-                      type="number"
-                      step="0.01"
-                      {...form.register("transportCostPerUnit", { valueAsNumber: true })}
-                      placeholder="Enter transport cost per unit"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="onTimeDelivery">On-Time Delivery Rate (%)</Label>
-                    <Input
-                      id="onTimeDelivery"
-                      type="number"
-                      min="0"
-                      max="100"
-                      {...form.register("onTimeDelivery", { valueAsNumber: true })}
-                      placeholder="Enter on-time delivery percentage"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="regulatoryFlags">Regulatory Flags (count)</Label>
-                    <Input
-                      id="regulatoryFlags"
-                      type="number"
-                      min="0"
-                      {...form.register("regulatoryFlags", { valueAsNumber: true })}
-                      placeholder="Enter number of regulatory flags"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="leadTimeDays">Lead Time (days)</Label>
-                    <Input
-                      id="leadTimeDays"
-                      type="number"
-                      min="0"
-                      {...form.register("leadTimeDays", { valueAsNumber: true })}
-                      placeholder="Enter average lead time in days"
+                  
+                  {/* Risk level indicator */}
+                  <div className="mt-4 w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full ${getRiskColor(region.riskLevel)} transition-all duration-300`}
+                      style={{ width: `${Math.min(100, region.avgScore)}%` }}
                     />
                   </div>
                 </div>
-              )}
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-              {currentStep === 4 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Review Your Information</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><strong>Company:</strong> {form.watch("name")}</div>
-                    <div><strong>Category:</strong> {form.watch("productCategory")}</div>
-                    <div><strong>Carbon Footprint:</strong> {form.watch("carbonFootprint")} tons/year</div>
-                    <div><strong>Water Usage:</strong> {form.watch("waterUsage")} L/year</div>
-                    <div><strong>Energy Efficiency:</strong> {form.watch("energyEfficiency")}/100</div>
-                    <div><strong>Labor Practices:</strong> {form.watch("laborPractices")}/100</div>
-                    <div><strong>Transport Cost:</strong> ${form.watch("transportCostPerUnit")}/unit</div>
-                    <div><strong>On-Time Delivery:</strong> {form.watch("onTimeDelivery")}%</div>
-                    <div><strong>Lead Time:</strong> {form.watch("leadTimeDays")} days</div>
-                    <div><strong>ISO 14001:</strong> {form.watch("ISO14001") ? "Yes" : "No"}</div>
+        {/* Supplier Details for Selected Region/Risk */}
+        <Card className="shadow-lg" data-testid="supplier-details">
+          <CardHeader>
+            <CardTitle>
+              {selectedRegion === "all" ? "All Suppliers" : `Suppliers in ${selectedRegion}`}
+              {riskFilter !== "all" && ` - ${riskFilter} Risk`}
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Showing {filteredSuppliers.length} suppliers
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredSuppliers.map((supplier) => (
+                <div key={supplier.id} className="border border-gray-200 rounded-lg p-6 bg-white hover:shadow-md transition-shadow" data-testid={`supplier-${supplier.id}`}>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                    {/* Supplier Info */}
+                    <div className="lg:col-span-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <MapPin className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900" data-testid={`supplier-name-${supplier.id}`}>
+                            {supplier.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">{supplier.productCategory}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Risk & Score */}
+                    <div className="lg:col-span-2">
+                      <div className="space-y-2">
+                        {getRiskBadge(supplier.riskLevel)}
+                        <div className="text-sm text-gray-600">
+                          Score: <span className="font-semibold text-green-600">{supplier.sustainabilityScore}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Risk Factors */}
+                    <div className="lg:col-span-4">
+                      <div className="flex flex-wrap gap-2">
+                        {supplier.carbonFootprint > 1000 && (
+                          <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                            High Carbon ({supplier.carbonFootprint.toLocaleString()}t)
+                          </Badge>
+                        )}
+                        {supplier.waterUsage > 1500 && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            High Water Usage
+                          </Badge>
+                        )}
+                        {!supplier.ISO14001 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                            No ISO 14001
+                          </Badge>
+                        )}
+                        {supplier.wasteGeneration > 15 && (
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                            High Waste Generation
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="lg:col-span-3">
+                      <div className="flex justify-end space-x-2">
+                        <Link href={`/admin/suppliers/${supplier.id}`}>
+                          <button 
+                            className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            data-testid={`button-view-${supplier.id}`}
+                          >
+                            View Details
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
+              ))}
+            </div>
 
-              <div className="flex justify-between">
-                {currentStep > 1 && (
-                  <Button type="button" variant="outline" onClick={prevStep}>
-                    Previous
-                  </Button>
-                )}
-                {currentStep < totalSteps ? (
-                  <Button type="button" onClick={nextStep} className="ml-auto">
-                    Next
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={createSupplierMutation.isPending}
-                    className="ml-auto"
-                  >
-                    {createSupplierMutation.isPending ? "Submitting..." : "Complete Registration"}
-                  </Button>
-                )}
+            {filteredSuppliers.length === 0 && (
+              <div className="text-center py-12">
+                <MapPin className="h-12 w-12 mx-auto text-gray-400 opacity-50 mb-4" />
+                <p className="text-lg text-gray-500 mb-2">No suppliers found</p>
+                <p className="text-sm text-gray-400">
+                  Try adjusting your region or risk level filters
+                </p>
               </div>
-            </form>
+            )}
           </CardContent>
         </Card>
       </div>
