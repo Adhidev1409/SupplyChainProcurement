@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
-import { insertSupplierSchema, weightsSchema, loginSchema, users } from "@shared/schema";
+import { insertSupplierSchema, weightsSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request and Session to include user
@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
     user?: any;
   }
@@ -31,7 +31,7 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 
 // Admin only middleware
 const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.user || req.session.user.role !== 'admin') {
+  if (!req.session.user || req.session.user.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
   }
   next();
@@ -39,22 +39,24 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session middleware
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Set to true in production with HTTPS
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-  }));
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: false, // set true in production with HTTPS
+        maxAge: 24 * 60 * 60 * 1000, // 24h
+      },
+    })
+  );
 
-  // API status route (moved from root to avoid conflict with React app)
-  app.get('/api/status', (req, res) => {
-    res.json({ message: 'Supply Chain Procurement API Server is running', status: 'ok' });
+  // API status
+  app.get("/api/status", (req, res) => {
+    res.json({ message: "Supply Chain Procurement API Server is running", status: "ok" });
   });
 
-  // Authentication routes
+  // ---------------- AUTH ----------------
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = loginSchema.parse(req.body);
@@ -64,14 +66,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Set user session (exclude password)
+      // exclude password before storing in session
       const { password: _, ...userWithoutPassword } = user;
       req.session.user = userWithoutPassword;
 
-      res.json({
-        message: "Login successful",
-        user: userWithoutPassword
-      });
+      res.json({ message: "Login successful", user: userWithoutPassword });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
@@ -82,9 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Logout failed" });
-      }
+      if (err) return res.status(500).json({ message: "Logout failed" });
       res.json({ message: "Logout successful" });
     });
   });
@@ -96,33 +93,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ user: req.session.user });
   });
 
-  // Get all suppliers (admin only)
+  // ---------------- SUPPLIERS ----------------
   app.get("/api/suppliers", requireAdmin, async (req, res) => {
     try {
       const suppliers = await storage.getAllSuppliers();
       res.json(suppliers);
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to fetch suppliers" });
     }
   });
 
-  // Get single supplier
   app.get("/api/suppliers/:id", async (req, res) => {
     try {
-      const { id } = req.params;
-      const supplier = await storage.getSupplier(id);
-      
-      if (!supplier) {
-        return res.status(404).json({ message: "Supplier not found" });
-      }
-      
+      const supplier = await storage.getSupplier(req.params.id);
+      if (!supplier) return res.status(404).json({ message: "Supplier not found" });
       res.json(supplier);
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to fetch supplier" });
     }
   });
 
-  // Create new supplier
   app.post("/api/suppliers", async (req, res) => {
     try {
       const supplierData = insertSupplierSchema.parse(req.body);
@@ -136,17 +126,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update supplier
   app.patch("/api/suppliers/:id", async (req, res) => {
     try {
-      const { id } = req.params;
       const updateData = insertSupplierSchema.partial().parse(req.body);
-      const supplier = await storage.updateSupplier(id, updateData);
-      
-      if (!supplier) {
-        return res.status(404).json({ message: "Supplier not found" });
-      }
-      
+      const supplier = await storage.updateSupplier(req.params.id, updateData);
+      if (!supplier) return res.status(404).json({ message: "Supplier not found" });
       res.json(supplier);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -156,23 +140,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete supplier
   app.delete("/api/suppliers/:id", async (req, res) => {
     try {
-      const { id } = req.params;
-      const deleted = await storage.deleteSupplier(id);
-      
-      if (!deleted) {
-        return res.status(404).json({ message: "Supplier not found" });
-      }
-      
+      const deleted = await storage.deleteSupplier(req.params.id);
+      if (!deleted) return res.status(404).json({ message: "Supplier not found" });
       res.status(204).send();
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to delete supplier" });
     }
   });
 
-  // Get the current metric weights
+  // ---------------- METRIC WEIGHTS ----------------
   app.get("/api/metric-weights", async (req, res) => {
     try {
       const weights = await storage.getMetricWeights();
@@ -183,48 +161,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Save/update the metric weights
   app.post("/api/metric-weights", async (req, res) => {
     try {
-      // Validate the incoming data against your Zod schema
       const newWeights = weightsSchema.parse(req.body);
       const savedWeights = await storage.saveMetricWeights(newWeights);
       res.status(200).json(savedWeights);
     } catch (error) {
-      // If validation fails, Zod throws an error we can catch
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid weights data", errors: error.errors });
       }
-      // Handle other potential errors (e.g., database connection issue)
       console.error("Failed to save metric weights:", error);
       res.status(500).json({ message: "Failed to save metric weights" });
     }
   });
 
-  // Get suppliers for authenticated user (user-specific)
+  // ---------------- USER-SPECIFIC ----------------
   app.get("/api/my-suppliers", requireAuth, async (req, res) => {
     try {
       const suppliers = await storage.getSuppliersForUser(req.user);
       res.json(suppliers);
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to fetch suppliers" });
     }
   });
 
-  // Get dashboard metrics (user-specific)
   app.get("/api/dashboard/metrics", requireAuth, async (req, res) => {
     try {
       const suppliers = await storage.getSuppliersForUser(req.user);
 
       const totalSuppliers = suppliers.length;
-      const avgScore = suppliers.length > 0 ?
-        suppliers.reduce((sum, s) => sum + s.sustainabilityScore, 0) / totalSuppliers : 0;
-      const certifiedSuppliers = suppliers.filter(s => s.ISO14001).length;
+      const avgScore =
+        suppliers.length > 0
+          ? suppliers.reduce((sum, s) => sum + s.sustainabilityScore, 0) / totalSuppliers
+          : 0;
+      const certifiedSuppliers = suppliers.filter((s) => s.ISO14001).length;
 
       const riskDistribution = {
-        low: suppliers.filter(s => s.riskLevel === 'Low').length,
-        medium: suppliers.filter(s => s.riskLevel === 'Medium').length,
-        high: suppliers.filter(s => s.riskLevel === 'High').length,
+        low: suppliers.filter((s) => s.riskLevel === "Low").length,
+        medium: suppliers.filter((s) => s.riskLevel === "Medium").length,
+        high: suppliers.filter((s) => s.riskLevel === "High").length,
       };
 
       res.json({
@@ -233,33 +208,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         certifiedSuppliers,
         riskDistribution,
       });
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to fetch dashboard metrics" });
     }
   });
 
-  // Create user (admin only)
+  // ---------------- USERS (ADMIN ONLY) ----------------
   app.post("/api/users", requireAdmin, async (req, res) => {
     try {
       const userData = req.body;
       const user = await storage.createUser(userData);
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to create user" });
     }
   });
 
-  // Get users (admin only)
   app.get("/api/users", requireAdmin, async (req, res) => {
     try {
-      const allUsers = await storage.getUsersByRole('supplier');
-      const usersWithoutPasswords = allUsers.map(user => {
-        const { password: _, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
+      const allUsers = await storage.getUsersByRole("supplier");
+      const usersWithoutPasswords = allUsers.map(({ password: _, ...u }) => u);
       res.json(usersWithoutPasswords);
-    } catch (error) {
+    } catch {
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
