@@ -33,6 +33,7 @@ const onboardingSchema = z.object({
   recyclingPolicy: z.boolean().optional().default(false),
   waterPolicy: z.boolean().optional().default(false),
   sustainabilityReport: z.boolean().optional().default(false),
+  country: z.string().min(1, "Country is required").default("USA"),
 });
 
 type OnboardingForm = z.infer<typeof onboardingSchema>;
@@ -71,6 +72,7 @@ export default function OnboardingPage() {
       recyclingPolicy: false,
       waterPolicy: false,
       sustainabilityReport: false,
+      country: "USA",
     },
   });
 
@@ -175,6 +177,20 @@ export default function OnboardingPage() {
                     />
                     {form.formState.errors.name && (
                       <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      {...form.register("country")}
+                      placeholder="Enter country"
+                    />
+                    {form.formState.errors.country && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.country.message}
+                      </p>
                     )}
                   </div>
 

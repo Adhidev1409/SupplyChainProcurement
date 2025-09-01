@@ -120,7 +120,7 @@ export default function RiskMapPage() {
       case 'low':
         return <Badge variant="default">Low Risk</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">Completed</Badge>;
     }
   };
 

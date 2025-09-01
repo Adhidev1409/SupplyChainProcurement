@@ -106,7 +106,7 @@ export default function QuestionnaireResultsPage() {
       case 'incomplete':
         return <Badge variant="destructive">Incomplete</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">Completed</Badge>;
     }
   };
 

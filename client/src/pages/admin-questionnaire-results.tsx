@@ -103,7 +103,7 @@ export default function AdminQuestionnaireResultsPage() {
       case 'incomplete':
         return <Badge variant="destructive" className="bg-red-100 text-red-800">Incomplete</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">Completed</Badge>;
     }
   };
 
