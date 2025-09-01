@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
-import { insertSupplierSchema, weightsSchema, loginSchema } from "@shared/schema";
+import { insertSupplierInputSchema, weightsSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request and Session to include user
@@ -115,20 +115,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/suppliers", async (req, res) => {
     try {
-      const supplierData = insertSupplierSchema.parse(req.body);
+      const supplierData = insertSupplierInputSchema.parse(req.body);
       const supplier = await storage.createSupplier(supplierData);
       res.status(201).json(supplier);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid supplier data", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create supplier" });
+      console.error("Create supplier failed:", error);
+      res.status(500).json({ message: "Failed to create supplier", error: (error as any)?.message });
     }
   });
 
   app.patch("/api/suppliers/:id", async (req, res) => {
     try {
-      const updateData = insertSupplierSchema.partial().parse(req.body);
+      const updateData = insertSupplierInputSchema.partial().parse(req.body);
       const supplier = await storage.updateSupplier(req.params.id, updateData);
       if (!supplier) return res.status(404).json({ message: "Supplier not found" });
       res.json(supplier);
@@ -136,7 +137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid supplier data", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to update supplier" });
+      console.error("Update supplier failed:", error);
+      res.status(500).json({ message: "Failed to update supplier", error: (error as any)?.message });
     }
   });
 
@@ -161,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/metric-weights", async (req, res) => {
+  const saveWeightsHandler = async (req: Request, res: Response) => {
     try {
       const newWeights = weightsSchema.parse(req.body);
       const savedWeights = await storage.saveMetricWeights(newWeights);
@@ -173,7 +175,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to save metric weights:", error);
       res.status(500).json({ message: "Failed to save metric weights" });
     }
-  });
+  };
+
+  app.post("/api/metric-weights", saveWeightsHandler);
+  app.put("/api/metric-weights", saveWeightsHandler);
 
   // ---------------- USER-SPECIFIC ----------------
   app.get("/api/my-suppliers", requireAuth, async (req, res) => {

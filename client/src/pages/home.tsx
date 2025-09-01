@@ -5,13 +5,18 @@ import { apiRequest } from "@/lib/queryClient";
 import { Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
 
-  // Avoid calling `/api/auth/me` again — rely on app-level auth check.
-  const authData = null;
-  const isLoading = false;
+  // Check authentication status
+  const { data: authData, isLoading } = useQuery<{ user: any } | null>({
+    queryKey: ['/api/auth/me'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: Infinity,
+    retry: false,
+  });
 
   if (isLoading) {
     return (

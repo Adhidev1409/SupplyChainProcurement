@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { Building, TrendingUp, Shield, AlertTriangle, FileText, Settings } from "lucide-react";
 import { Link } from "wouter";
+import { type SupplierWithCalculated } from "@shared/schema";
 
 export default function SupplierDashboard() {
   const { data: metrics, isLoading: metricsLoading } = useQuery({
@@ -12,7 +13,7 @@ export default function SupplierDashboard() {
     refetchInterval: 30000,
   });
 
-  const { data: suppliers, isLoading: suppliersLoading } = useQuery({
+  const { data: suppliers = [], isLoading: suppliersLoading } = useQuery<SupplierWithCalculated[]>({
     queryKey: ["/api/my-suppliers"],
   });
 
@@ -52,12 +53,12 @@ export default function SupplierDashboard() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Location</p>
-                <p className="font-medium">{mySupplier.location}</p>
+                <p className="text-sm text-gray-600">Product Category</p>
+                <p className="font-medium">{mySupplier.productCategory}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Employees</p>
-                <p className="font-medium">{mySupplier.employeeCount}</p>
+                <p className="text-sm text-gray-600">Lead Time</p>
+                <p className="font-medium">{mySupplier.leadTimeDays} days</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Sustainability Score</p>
@@ -77,8 +78,8 @@ export default function SupplierDashboard() {
                 <p className="text-sm text-gray-600">Certifications</p>
                 <div className="flex space-x-2">
                   {mySupplier.ISO14001 && <Badge variant="outline">ISO 14001</Badge>}
-                  {mySupplier.recyclingPolicy && <Badge variant="outline">Recycling</Badge>}
-                  {mySupplier.sustainabilityReport && <Badge variant="outline">Sustainability Report</Badge>}
+                  {mySupplier.wasteGeneration < 10 && <Badge variant="outline">Low Waste</Badge>}
+                  {mySupplier.sustainabilityScore > 75 && <Badge variant="outline">High Sustainability</Badge>}
                 </div>
               </div>
             </div>
@@ -134,8 +135,8 @@ export default function SupplierDashboard() {
                 <span className="font-medium">{mySupplier?.waterUsage} L/month</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm">Waste Reduction</span>
-                <span className="font-medium">{mySupplier?.wasteReduction}%</span>
+                <span className="text-sm">Waste Generation</span>
+                <span className="font-medium">{mySupplier?.wasteGeneration} tons/month</span>
               </div>
             </div>
           </CardContent>
@@ -170,13 +171,13 @@ export default function SupplierDashboard() {
                 </div>
               )}
 
-              {mySupplier.wasteReduction < 50 && (
+              {mySupplier.wasteGeneration > 15 && (
                 <div className="p-4 border rounded-lg bg-green-50">
                   <div className="flex items-center space-x-2">
                     <TrendingUp className="h-5 w-5 text-green-600" />
                     <span className="font-medium text-green-900">Waste Reduction Opportunity</span>
                   </div>
-                  <p className="text-green-700 mt-1">Increasing waste reduction above 50% could significantly boost your sustainability score.</p>
+                  <p className="text-green-700 mt-1">Reducing waste generation below 15 tons could significantly boost your sustainability score.</p>
                 </div>
               )}
             </div>

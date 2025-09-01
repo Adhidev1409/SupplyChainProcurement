@@ -32,8 +32,7 @@ const saveWeightsApi = async (weights: WeightConfig): Promise<WeightConfig> => {
     body: JSON.stringify(weights),
   });
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to save weights");
+    throw new Error("Failed to save weights to the server.");
   }
   return response.json();
 };
@@ -58,10 +57,13 @@ export default function WeightsConfigPage() {
         description: "The new configuration has been applied.",
       });
 
-      // ✅ Invalidate queries with consistent keys
+      // ✅ Invalidate queries with consistent keys and refetch immediately
       queryClient.invalidateQueries({ queryKey: ["metricWeights"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardMetrics"] });
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      
+      // Force immediate refetch for real-time update
+      queryClient.refetchQueries({ queryKey: ["metricWeights"] });
     },
     onError: (error: any) => {
       toast({

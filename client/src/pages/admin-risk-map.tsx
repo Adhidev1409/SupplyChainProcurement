@@ -18,7 +18,16 @@ export default function AdminRiskMapPage() {
   // Group suppliers by region and calculate regional risk metrics
   const regionalData = useMemo(() => {
     const regions = suppliers.reduce((acc, supplier) => {
-      const region = supplier.location.split(',').pop()?.trim() || 'Unknown';
+      // Use product category to determine mock region
+      const regionMap: { [key: string]: string } = {
+        'Electronics': 'Asia-Pacific',
+        'Textiles': 'Europe',
+        'Food': 'North America',
+        'Automotive': 'North America',
+        'Chemicals': 'Europe',
+        'Pharmaceuticals': 'Asia-Pacific'
+      };
+      const region = regionMap[supplier.productCategory] || 'Other';
       if (!acc[region]) {
         acc[region] = {
           name: region,
@@ -61,7 +70,16 @@ export default function AdminRiskMapPage() {
 
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter(supplier => {
-      const region = supplier.location.split(',').pop()?.trim() || 'Unknown';
+      // Use same region mapping logic
+      const regionMap: { [key: string]: string } = {
+        'Electronics': 'Asia-Pacific',
+        'Textiles': 'Europe',
+        'Food': 'North America',
+        'Automotive': 'North America',
+        'Chemicals': 'Europe',
+        'Pharmaceuticals': 'Asia-Pacific'
+      };
+      const region = regionMap[supplier.productCategory] || 'Other';
       const matchesRegion = selectedRegion === "all" || region === selectedRegion;
       const matchesRisk = riskFilter === "all" || supplier.riskLevel === riskFilter;
       return matchesRegion && matchesRisk;
@@ -247,7 +265,7 @@ export default function AdminRiskMapPage() {
                           <h4 className="font-semibold text-gray-900" data-testid={`supplier-name-${supplier.id}`}>
                             {supplier.name}
                           </h4>
-                          <p className="text-sm text-gray-600">{supplier.location}</p>
+                          <p className="text-sm text-gray-600">{supplier.productCategory}</p>
                         </div>
                       </div>
                     </div>
@@ -280,9 +298,9 @@ export default function AdminRiskMapPage() {
                             No ISO 14001
                           </Badge>
                         )}
-                        {!supplier.recyclingPolicy && (
+                        {supplier.wasteGeneration > 15 && (
                           <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                            No Recycling Policy
+                            High Waste Generation
                           </Badge>
                         )}
                       </div>

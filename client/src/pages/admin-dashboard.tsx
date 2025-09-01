@@ -8,6 +8,7 @@ import RiskDistributionChart from "@/components/charts/risk-distribution-chart";
 import ScoreDistributionChart from "@/components/charts/score-distribution-chart";
 import PerformanceRadarChart from "@/components/charts/performance-radar-chart";
 import { type SupplierWithCalculated } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 
 interface DashboardMetrics {
   totalSuppliers: number;
@@ -23,11 +24,21 @@ interface DashboardMetrics {
 export default function AdminDashboard() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ["/api/dashboard/metrics"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    select: (d) =>
+      (d as any) ?? {
+        totalSuppliers: 0,
+        avgScore: 0,
+        certifiedSuppliers: 0,
+        riskDistribution: { low: 0, medium: 0, high: 0 },
+      },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery<SupplierWithCalculated[]>({
     queryKey: ["/api/suppliers"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    select: (d) => (Array.isArray(d) ? (d as SupplierWithCalculated[]) : []),
   });
 
   if (metricsLoading || suppliersLoading) {
@@ -173,7 +184,7 @@ export default function AdminDashboard() {
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900">{supplier.name}</h3>
-                            <p className="text-sm text-gray-600">{supplier.location}</p>
+                            <p className="text-sm text-gray-600">{supplier.productCategory}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">

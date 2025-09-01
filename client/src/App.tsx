@@ -13,13 +13,16 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import SupplierDashboard from "@/pages/supplier-dashboard";
 import SuppliersListPage from "@/pages/suppliers-list";
 import SupplierDetailPage from "@/pages/supplier-detail";
-import SupplierOnboardingPage from "@/pages/supplier-onboarding";
+import OnboardingPage from "@/pages/onboarding";
 import SupplierPortalPage from "@/pages/supplier-portal";
 import WeightsConfigPage from "@/pages/weights-config";
 import AdminRiskMapPage from "@/pages/admin-risk-map";
 import AdminSimulationPage from "@/pages/admin-simulation";
-import AdminSupplierOnboardingPage from "@/pages/admin-supplier-onboarding";
 import AdminQuestionnaireResultsPage from "@/pages/admin-questionnaire-results";
+import RiskMapPage from "@/pages/risk-map";
+import SimulationPage from "@/pages/simulation";
+import QuestionnaireResultsPage from "@/pages/questionnaire-results";
+import ProcurementDashboard from "@/pages/procurement-dashboard";
 import { Loader2 } from "lucide-react";
 import { getQueryFn } from "@/lib/queryClient";
 
@@ -135,6 +138,13 @@ function Router() {
             user={user}
           />
         </Route>
+        <Route path="/admin">
+          <ProtectedRoute
+            component={AdminDashboard}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
         <Route path="/admin/suppliers">
           <ProtectedRoute
             component={SuppliersListPage}
@@ -170,9 +180,9 @@ function Router() {
             user={user}
           />
         </Route>
-        <Route path="/admin/supplier-onboarding">
+        <Route path="/admin/onboarding">
           <ProtectedRoute
-            component={AdminSupplierOnboardingPage}
+            component={OnboardingPage}
             allowedRoles={['admin']}
             user={user}
           />
@@ -180,6 +190,50 @@ function Router() {
         <Route path="/admin/questionnaire-results">
           <ProtectedRoute
             component={AdminQuestionnaireResultsPage}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
+
+        {/* Procurement routes (shared between admin and procurement users) */}
+        <Route path="/procurement">
+          <ProtectedRoute
+            component={ProcurementDashboard}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
+        <Route path="/procurement/suppliers">
+          <ProtectedRoute
+            component={SuppliersListPage}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
+        <Route path="/procurement/suppliers/:id">
+          <ProtectedRoute
+            component={SupplierDetailPage}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
+        <Route path="/procurement/risk-map">
+          <ProtectedRoute
+            component={RiskMapPage}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
+        <Route path="/procurement/simulation">
+          <ProtectedRoute
+            component={SimulationPage}
+            allowedRoles={['admin']}
+            user={user}
+          />
+        </Route>
+        <Route path="/procurement/questionnaire-results">
+          <ProtectedRoute
+            component={QuestionnaireResultsPage}
             allowedRoles={['admin']}
             user={user}
           />
@@ -195,7 +249,7 @@ function Router() {
         </Route>
         <Route path="/supplier/onboarding">
           <ProtectedRoute
-            component={SupplierOnboardingPage}
+            component={OnboardingPage}
             allowedRoles={['supplier']}
             user={user}
           />

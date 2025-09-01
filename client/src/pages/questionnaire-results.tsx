@@ -9,6 +9,7 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { CheckCircle, XCircle, Clock, Search } from "lucide-react";
 import { type SupplierWithCalculated } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function QuestionnaireResultsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,6 +18,8 @@ export default function QuestionnaireResultsPage() {
 
   const { data: suppliers = [], isLoading } = useQuery<SupplierWithCalculated[]>({
     queryKey: ["/api/suppliers"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    select: (d) => (Array.isArray(d) ? (d as SupplierWithCalculated[]) : []),
   });
 
   // Mock questionnaire completion data - in real app this would come from API
@@ -24,19 +27,20 @@ export default function QuestionnaireResultsPage() {
     return suppliers.map(supplier => ({
       id: supplier.id,
       name: supplier.name,
-      location: supplier.location,
+      productCategory: supplier.productCategory,
       completedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: "completed",
       responses: {
         carbonFootprint: supplier.carbonFootprint,
         waterUsage: supplier.waterUsage,
         ISO14001: supplier.ISO14001,
-        recyclingPolicy: supplier.recyclingPolicy,
-        wasteReduction: supplier.wasteReduction,
+        wasteGeneration: supplier.wasteGeneration,
         energyEfficiency: supplier.energyEfficiency,
-        waterPolicy: supplier.waterPolicy,
-        sustainabilityReport: supplier.sustainabilityReport,
-        employeeCount: supplier.employeeCount,
+        laborPractices: supplier.laborPractices,
+        transportCostPerUnit: supplier.transportCostPerUnit,
+        onTimeDelivery: supplier.onTimeDelivery,
+        regulatoryFlags: supplier.regulatoryFlags,
+        leadTimeDays: supplier.leadTimeDays,
       },
       sustainabilityScore: supplier.sustainabilityScore,
       riskLevel: supplier.riskLevel,
@@ -150,7 +154,9 @@ export default function QuestionnaireResultsPage() {
             <CardContent className="p-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-secondary-foreground mb-1">
-                  {Math.round(questionnaireData.reduce((sum, q) => sum + q.sustainabilityScore, 0) / questionnaireData.length)}
+                  {questionnaireData.length > 0 
+                    ? Math.round(questionnaireData.reduce((sum, q) => sum + q.sustainabilityScore, 0) / questionnaireData.length)
+                    : 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Avg. Score</div>
               </div>
@@ -219,7 +225,7 @@ export default function QuestionnaireResultsPage() {
                       {getStatusIcon(result.status)}
                       <div>
                         <h3 className="font-semibold" data-testid={`supplier-name-${result.id}`}>{result.name}</h3>
-                        <p className="text-sm text-muted-foreground">{result.location}</p>
+                        <p className="text-sm text-muted-foreground">{result.productCategory}</p>
                       </div>
                     </div>
                   </div>
@@ -252,9 +258,9 @@ export default function QuestionnaireResultsPage() {
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Recycling:</span>
-                        <span className={`ml-1 font-medium ${result.responses.recyclingPolicy ? 'text-accent' : 'text-muted-foreground'}`}>
-                          {result.responses.recyclingPolicy ? 'Yes' : 'No'}
+                        <span className="text-muted-foreground">Waste Generation:</span>
+                        <span className={`ml-1 font-medium ${result.responses.wasteGeneration < 10 ? 'text-accent' : 'text-muted-foreground'}`}>
+                          {result.responses.wasteGeneration} tons
                         </span>
                       </div>
                     </div>

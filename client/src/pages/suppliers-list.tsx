@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PerformersChart from "@/components/charts/performers-chart";
 import { type SupplierWithCalculated } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function SuppliersListPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,6 +20,8 @@ export default function SuppliersListPage() {
 
   const { data: suppliers = [], isLoading } = useQuery<SupplierWithCalculated[]>({
     queryKey: ["/api/suppliers"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    select: (d) => (Array.isArray(d) ? (d as SupplierWithCalculated[]) : []),
   });
 
   function calculateRiskLevel(score: number): "Low" | "Medium" | "High" {

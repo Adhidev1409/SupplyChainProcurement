@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { type SupplierWithCalculated } from "@shared/schema";
 
 interface PerformersChartProps {
@@ -29,7 +29,7 @@ export default function PerformersChart({ suppliers }: PerformersChartProps) {
           <Tooltip />
           <Bar dataKey="score" isAnimationActive={false}>
             {chartData.map((entry, index) => (
-              <cell key={`cell-${index}`} fill={entry.fill} />
+              <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Bar>
         </BarChart>

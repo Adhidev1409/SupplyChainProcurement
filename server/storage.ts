@@ -1,4 +1,5 @@
 import { drizzle } from 'drizzle-orm/neon-http';
+import { sql as dsql } from 'drizzle-orm';
 import { neon } from '@neondatabase/serverless';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
@@ -40,8 +41,8 @@ export interface IStorage {
   getSupplier(id: string): Promise<SupplierWithCalculated | undefined>;
   getAllSuppliers(): Promise<SupplierWithCalculated[]>;
   getSuppliersForUser(user: User): Promise<SupplierWithCalculated[]>;
-  createSupplier(supplier: InsertSupplier): Promise<SupplierWithCalculated>;
-  updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<SupplierWithCalculated | undefined>;
+  createSupplier(supplier: Omit<InsertSupplier, 'sustainabilityScore' | 'riskLevel'>): Promise<SupplierWithCalculated>;
+  updateSupplier(id: string, supplier: Partial<Omit<InsertSupplier, 'sustainabilityScore' | 'riskLevel'>>): Promise<SupplierWithCalculated | undefined>;
   deleteSupplier(id: string): Promise<boolean>;
 
   // NEW Methods for global weights
@@ -55,25 +56,25 @@ function calculateSustainabilityScore(supplier: Supplier, weights: Weights): num
 
   // --- Normalize and Score Metrics (0-100) ---
   // Lower is better for these, so we invert the score.
-  // You can adjust the max values (4000, 2500) based on your data.
   let carbonScore = 100 - (Math.min(supplier.carbonFootprint, 4000) / 4000) * 100;
   let waterScore = 100 - (Math.min(supplier.waterUsage, 2500) / 2500) * 100;
-  // Higher is better for these, so the score is the value itself.
-  let wasteReductionScore = supplier.wasteReduction;
+  // Higher is better for these, use direct values.
   let energyEfficiencyScore = supplier.energyEfficiency;
+  let laborScore = supplier.laborPractices;
+  let wasteReductionScore = Math.max(0, Math.min(100, supplier.wasteReduction ?? 0));
 
   // --- Apply the weights ---
   totalScore += (carbonScore / 100) * weights.carbonFootprint;
   totalScore += (waterScore / 100) * weights.waterUsage;
-  totalScore += (wasteReductionScore / 100) * weights.wasteReduction;
   totalScore += (energyEfficiencyScore / 100) * weights.energyEfficiency;
+  totalScore += (wasteReductionScore / 100) * (((weights as any).wasteReduction ?? 0) as number);
+  // Note: We're using existing weights from appSettings even though supplier schema changed
 
-  // --- Score Policies (Boolean metrics) ---
-  // If a policy exists, they get the full weight for that category.
+  // --- Score Boolean Metrics ---
   if (supplier.ISO14001) totalScore += weights.iso14001;
-  if (supplier.recyclingPolicy) totalScore += weights.recyclingPolicy;
-  if (supplier.waterPolicy) totalScore += weights.waterPolicy;
-  if (supplier.sustainabilityReport) totalScore += weights.sustainabilityReport;
+  if ((supplier as any).recyclingPolicy) totalScore += weights.recyclingPolicy;
+  if ((supplier as any).waterPolicy) totalScore += weights.waterPolicy;
+  if ((supplier as any).sustainabilityReport) totalScore += weights.sustainabilityReport;
 
   // Ensure the final score is between 0 and 100
   return Math.max(0, Math.min(100, Math.round(totalScore)));
@@ -127,7 +128,12 @@ export class DbStorage implements IStorage {
   // --- Supplier methods (now use dynamic weights) ---
   async getSupplier(id: string): Promise<SupplierWithCalculated | undefined> {
     const weights = await this.getMetricWeights();
-    const supplier = await db.query.suppliers.findFirst({ where: eq(suppliers.id, id) });
+    const supplierId = parseInt(id);
+    if (isNaN(supplierId)) return undefined;
+    
+    const supplier = await db.query.suppliers.findFirst({ 
+      where: eq(suppliers.id, supplierId) 
+    });
     return supplier ? addCalculatedFields(supplier, weights) : undefined;
   }
 
@@ -145,8 +151,11 @@ export class DbStorage implements IStorage {
       return this.getAllSuppliers();
     } else if (user.role === 'supplier' && user.supplierId) {
       // Supplier users see only their own supplier data
+  const supplierId = parseInt(String(user.supplierId));
+      if (isNaN(supplierId)) return [];
+      
       const supplier = await db.query.suppliers.findFirst({
-        where: eq(suppliers.id, user.supplierId)
+        where: eq(suppliers.id, supplierId)
       });
       return supplier ? [addCalculatedFields(supplier, weights)] : [];
     }
@@ -154,21 +163,71 @@ export class DbStorage implements IStorage {
     return [];
   }
 
-  async createSupplier(insertSupplier: InsertSupplier): Promise<SupplierWithCalculated> {
+  async createSupplier(insertSupplier: Omit<InsertSupplier, 'sustainabilityScore' | 'riskLevel'>): Promise<SupplierWithCalculated> {
     const weights = await this.getMetricWeights();
-    const result = await db.insert(suppliers).values(insertSupplier).returning();
-    return addCalculatedFields(result[0], weights);
+    // Compute sustainability score and risk from provided inputs
+    const tempSupplier = {
+      ...insertSupplier,
+      sustainabilityScore: 0,
+      riskLevel: 'Medium' as const,
+    } as unknown as Supplier;
+    const computedScore = calculateSustainabilityScore(tempSupplier, weights);
+    const computedRisk = calculateRiskLevel(computedScore);
+
+    const doInsert = async () => {
+      const result = await db
+        .insert(suppliers)
+        .values({
+          ...(insertSupplier as any),
+          sustainabilityScore: computedScore,
+          riskLevel: computedRisk,
+        } as InsertSupplier)
+        .returning();
+      return result[0];
+    };
+
+    try {
+      const inserted = await doInsert();
+      return addCalculatedFields(inserted, weights);
+    } catch (err: any) {
+      // If identity sequence is behind (after seeding explicit IDs), reset and retry once
+      const message: string = err?.message || '';
+      if (err?.code === '23505' && message.includes('suppliers_pkey')) {
+        try {
+          // Reset the sequence to max(id)
+          await dsql`SELECT setval(pg_get_serial_sequence('suppliers','id'), COALESCE((SELECT MAX(id) FROM suppliers), 1));`;
+          const retried = await doInsert();
+          return addCalculatedFields(retried, weights);
+        } catch (err2) {
+          throw err2;
+        }
+      }
+      throw err;
+    }
   }
 
-  async updateSupplier(id: string, updates: Partial<InsertSupplier>): Promise<SupplierWithCalculated | undefined> {
+  async updateSupplier(id: string, updates: Partial<Omit<InsertSupplier, 'sustainabilityScore' | 'riskLevel'>>): Promise<SupplierWithCalculated | undefined> {
     const weights = await this.getMetricWeights();
-    const result = await db.update(suppliers).set(updates).where(eq(suppliers.id, id)).returning();
+    const supplierId = parseInt(id);
+    if (isNaN(supplierId)) return undefined;
+
+    // Apply updates first
+    const result = await db.update(suppliers).set(updates).where(eq(suppliers.id, supplierId)).returning();
     if (result.length === 0) return undefined;
-    return addCalculatedFields(result[0], weights);
+
+    // Recalculate score and risk
+    const updated = result[0] as Supplier;
+    const newScore = calculateSustainabilityScore(updated, weights);
+    const newRisk = calculateRiskLevel(newScore);
+    const result2 = await db.update(suppliers).set({ sustainabilityScore: newScore, riskLevel: newRisk }).where(eq(suppliers.id, supplierId)).returning();
+    return addCalculatedFields(result2[0], weights);
   }
 
   async deleteSupplier(id: string): Promise<boolean> {
-    const result = await db.delete(suppliers).where(eq(suppliers.id, id)).returning({ id: suppliers.id });
+    const supplierId = parseInt(id);
+    if (isNaN(supplierId)) return false;
+    
+    const result = await db.delete(suppliers).where(eq(suppliers.id, supplierId)).returning({ id: suppliers.id });
     return result.length > 0;
   }
 
@@ -183,7 +242,7 @@ export class DbStorage implements IStorage {
         carbonFootprint: 25, waterUsage: 17, wasteReduction: 10,
         energyEfficiency: 10, iso14001: 15, recyclingPolicy: 8,
         waterPolicy: 6, sustainabilityReport: 9,
-      };
+      } as unknown as Weights;
     }
     const { id, ...weights } = settings;
     return weights;

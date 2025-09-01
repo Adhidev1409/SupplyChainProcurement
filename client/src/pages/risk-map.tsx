@@ -18,7 +18,16 @@ export default function RiskMapPage() {
   // Group suppliers by region and calculate regional risk metrics
   const regionalData = useMemo(() => {
     const regions = suppliers.reduce((acc, supplier) => {
-      const region = supplier.location.split(',').pop()?.trim() || 'Unknown';
+      // Use product category to determine mock region
+      const regionMap: { [key: string]: string } = {
+        'Electronics': 'Asia-Pacific',
+        'Textiles': 'Europe',
+        'Food': 'North America',
+        'Automotive': 'North America',
+        'Chemicals': 'Europe',
+        'Pharmaceuticals': 'Asia-Pacific'
+      };
+      const region = regionMap[supplier.productCategory] || 'Other';
       if (!acc[region]) {
         acc[region] = {
           name: region,
@@ -61,7 +70,16 @@ export default function RiskMapPage() {
 
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter(supplier => {
-      const region = supplier.location.split(',').pop()?.trim() || 'Unknown';
+      // Use same region mapping logic
+      const regionMap: { [key: string]: string } = {
+        'Electronics': 'Asia-Pacific',
+        'Textiles': 'Europe',
+        'Food': 'North America',
+        'Automotive': 'North America',
+        'Chemicals': 'Europe',
+        'Pharmaceuticals': 'Asia-Pacific'
+      };
+      const region = regionMap[supplier.productCategory] || 'Other';
       const matchesRegion = selectedRegion === "all" || region === selectedRegion;
       const matchesRisk = riskFilter === "all" || supplier.riskLevel === riskFilter;
       return matchesRegion && matchesRisk;
@@ -240,7 +258,7 @@ export default function RiskMapPage() {
                           <h4 className="font-medium" data-testid={`supplier-name-${supplier.id}`}>
                             {supplier.name}
                           </h4>
-                          <p className="text-sm text-muted-foreground">{supplier.location}</p>
+                          <p className="text-sm text-muted-foreground">{supplier.productCategory}</p>
                         </div>
                       </div>
                     </div>
@@ -273,9 +291,9 @@ export default function RiskMapPage() {
                             No ISO 14001
                           </Badge>
                         )}
-                        {!supplier.recyclingPolicy && (
+                        {supplier.wasteGeneration > 15 && (
                           <Badge variant="outline" className="text-xs">
-                            No Recycling Policy
+                            High Waste Generation
                           </Badge>
                         )}
                       </div>

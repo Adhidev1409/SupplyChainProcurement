@@ -24,19 +24,20 @@ export default function AdminQuestionnaireResultsPage() {
     return suppliers.map(supplier => ({
       id: supplier.id,
       name: supplier.name,
-      location: supplier.location,
+      productCategory: supplier.productCategory,
       completedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: "completed",
       responses: {
         carbonFootprint: supplier.carbonFootprint,
         waterUsage: supplier.waterUsage,
         ISO14001: supplier.ISO14001,
-        recyclingPolicy: supplier.recyclingPolicy,
-        wasteReduction: supplier.wasteReduction,
+        wasteGeneration: supplier.wasteGeneration,
         energyEfficiency: supplier.energyEfficiency,
-        waterPolicy: supplier.waterPolicy,
-        sustainabilityReport: supplier.sustainabilityReport,
-        employeeCount: supplier.employeeCount,
+        laborPractices: supplier.laborPractices,
+        transportCostPerUnit: supplier.transportCostPerUnit,
+        onTimeDelivery: supplier.onTimeDelivery,
+        regulatoryFlags: supplier.regulatoryFlags,
+        leadTimeDays: supplier.leadTimeDays,
       },
       sustainabilityScore: supplier.sustainabilityScore,
       riskLevel: supplier.riskLevel,
@@ -222,7 +223,7 @@ export default function AdminQuestionnaireResultsPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900" data-testid={`supplier-name-${result.id}`}>{result.name}</h3>
-                        <p className="text-sm text-gray-600">{result.location}</p>
+                        <p className="text-sm text-gray-600">{result.productCategory}</p>
                       </div>
                     </div>
                   </div>
@@ -255,9 +256,9 @@ export default function AdminQuestionnaireResultsPage() {
                         </span>
                       </div>
                       <div className="p-2 bg-gray-50 rounded">
-                        <span className="text-gray-600">Recycling:</span>
-                        <span className={`ml-1 font-semibold ${result.responses.recyclingPolicy ? 'text-green-600' : 'text-red-600'}`}>
-                          {result.responses.recyclingPolicy ? 'Yes' : 'No'}
+                        <span className="text-gray-600">Waste Generation:</span>
+                        <span className={`ml-1 font-semibold ${result.responses.wasteGeneration < 10 ? 'text-green-600' : 'text-red-600'}`}>
+                          {result.responses.wasteGeneration} tons
                         </span>
                       </div>
                     </div>

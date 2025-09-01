@@ -21,12 +21,12 @@ export const generateRecommendations = (supplier: SupplierWithCalculated) => {
     });
   }
   
-  if (!supplier.recyclingPolicy) {
+  if (supplier.wasteGeneration > 15) {
     recommendations.push({
       type: "Waste Management Enhancement",
       color: "secondary",
-      title: "Implement Recycling Program",
-      description: "Establishing a comprehensive recycling program could improve your sustainability score by 8-12 points and reduce waste disposal costs."
+      title: "Reduce Waste Generation",
+      description: `With ${supplier.wasteGeneration} tons of waste generation, implementing waste reduction and recycling programs could improve your sustainability score by 8-12 points.`
     });
   }
   
@@ -39,12 +39,12 @@ export const generateRecommendations = (supplier: SupplierWithCalculated) => {
     });
   }
   
-  if (supplier.riskScore > 50) {
+  if (supplier.riskLevel === 'High') {
     recommendations.push({
       type: "Risk Management",
       color: "destructive",
       title: "Risk Mitigation Required",
-      description: "Your risk score indicates potential supply chain vulnerabilities. Consider diversifying suppliers and implementing risk monitoring systems."
+      description: "Your high risk level indicates potential supply chain vulnerabilities. Consider implementing risk monitoring systems and improving regulatory compliance."
     });
   }
 
@@ -62,8 +62,8 @@ export const generateRecommendations = (supplier: SupplierWithCalculated) => {
 };
 
 export const calculateSimulation = (
-  currentSupplierId: string,
-  prospectiveSupplierId: string,
+  currentSupplierId: number,
+  prospectiveSupplierId: number,
   quantity: number,
   suppliers: SupplierWithCalculated[],
   years: number,
@@ -79,7 +79,8 @@ export const calculateSimulation = (
   // Base diffs per unit
   const carbonDiffPerUnit = currentSupplier.carbonFootprint - prospectiveSupplier.carbonFootprint;
   const waterDiffPerUnit = currentSupplier.waterUsage - prospectiveSupplier.waterUsage;
-  const costDiffPerUnit = prospectiveSupplier.sustainabilityScore - currentSupplier.sustainabilityScore;
+  // Use direct cost difference per unit (transport cost as proxy for direct cost)
+  const costDiffPerUnit = prospectiveSupplier.transportCostPerUnit - currentSupplier.transportCostPerUnit;
 
   // Adjust for contract length (scale impact over time)
   const timeFactor = years;
@@ -93,7 +94,7 @@ export const calculateSimulation = (
   // Final projections
   const carbonSavings = Math.round((carbonDiffPerUnit * quantity * timeFactor * riskMultiplier) / 1000);
   const waterSavings = Math.round((waterDiffPerUnit * quantity * timeFactor * riskMultiplier) / 100);
-  const costImpact = Math.round(costDiffPerUnit * quantity * timeFactor * 10 * riskMultiplier);
+  const costImpact = Math.round(costDiffPerUnit * quantity * timeFactor * riskMultiplier);
 
   return {
     currentSupplier,

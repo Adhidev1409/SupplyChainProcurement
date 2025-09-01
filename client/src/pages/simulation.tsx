@@ -27,8 +27,8 @@ export default function SimulationPage() {
   }
 
   const result = calculateSimulation(
-    currentSupplierId,
-    prospectiveSupplierId,
+    parseInt(currentSupplierId),
+    parseInt(prospectiveSupplierId),
     parseInt(orderQuantity),
     suppliers,
     parseInt(contractLength),           // ✅ new
@@ -75,7 +75,7 @@ export default function SimulationPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
+                      <SelectItem key={supplier.id} value={supplier.id.toString()}>
                         {supplier.name}
                       </SelectItem>
                     ))}
@@ -90,7 +90,7 @@ export default function SimulationPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
+                      <SelectItem key={supplier.id} value={supplier.id.toString()}>
                         {supplier.name}
                       </SelectItem>
                     ))}

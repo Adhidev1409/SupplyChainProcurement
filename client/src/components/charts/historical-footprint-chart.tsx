@@ -8,9 +8,11 @@ interface HistoricalFootprintProps {
 export default function HistoricalFootprintChart({ supplier }: HistoricalFootprintProps) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  const data = supplier.historicalCarbon.map((value, index) => ({
-    month: months[index],
-    footprint: value,
+  // Generate mock historical data based on current carbon footprint
+  const baseFootprint = supplier.carbonFootprint;
+  const data = months.map((month, index) => ({
+    month,
+    footprint: Math.round(baseFootprint + (Math.random() - 0.5) * baseFootprint * 0.2),
   }));
 
   return (

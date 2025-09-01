@@ -28,8 +28,8 @@ export default function AdminSimulationPage() {
     }
 
     const result = calculateSimulation(
-      currentSupplierId,
-      prospectiveSupplierId,
+      parseInt(currentSupplierId),
+      parseInt(prospectiveSupplierId),
       parseInt(orderQuantity),
       suppliers,
       parseInt(contractLength),
@@ -79,7 +79,7 @@ export default function AdminSimulationPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
+                      <SelectItem key={supplier.id} value={supplier.id.toString()}>
                         {supplier.name}
                       </SelectItem>
                     ))}
@@ -94,7 +94,7 @@ export default function AdminSimulationPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
+                      <SelectItem key={supplier.id} value={supplier.id.toString()}>
                         {supplier.name}
                       </SelectItem>
                     ))}

@@ -145,7 +145,7 @@ export default function ProcurementDashboard() {
                           </div>
                           <div>
                             <p className="font-medium text-sm" data-testid={`supplier-name-${index}`}>{supplier.name}</p>
-                            <p className="text-xs text-muted-foreground">{supplier.location}</p>
+                            <p className="text-xs text-muted-foreground">{supplier.productCategory}</p>
                           </div>
                         </div>
                         <div className="text-right">

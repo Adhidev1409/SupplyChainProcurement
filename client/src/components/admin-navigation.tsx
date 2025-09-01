@@ -43,9 +43,9 @@ export default function AdminNavigation({ user, onLogout }: AdminNavigationProps
   const primaryNavigation = [
     {
       name: "Dashboard",
-      href: "/admin/dashboard",
+      href: "/admin",
       icon: LayoutDashboard,
-      current: location === "/admin/dashboard",
+      current: location === "/admin",
     },
     {
       name: "Suppliers",
@@ -70,18 +70,18 @@ export default function AdminNavigation({ user, onLogout }: AdminNavigationProps
   const secondaryNavigation = [
     {
       name: "Add Supplier",
-      href: "/admin/supplier-onboarding",
+      href: "/admin/onboarding",
       icon: UserPlus,
-      current: location === "/admin/supplier-onboarding",
+      current: location === "/admin/onboarding",
     },
     {
-      name: "Questionnaire Results",
+      name: "Results",
       href: "/admin/questionnaire-results", 
       icon: FileText,
       current: location === "/admin/questionnaire-results",
     },
     {
-      name: "Weights Config",
+      name: "Weights",
       href: "/admin/weights-config",
       icon: Settings,
       current: location === "/admin/weights-config",

@@ -8,14 +8,19 @@ import PerformanceRadarChart from "@/components/charts/performance-radar-chart";
 import HistoricalFootprintChart from "@/components/charts/historical-footprint-chart";
 import { generateRecommendations } from "@/lib/data";
 import { type SupplierWithCalculated } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function SupplierDetailPage() {
-  const [, params] = useRoute("/procurement/suppliers/:id");
-  const supplierId = params?.id;
+  // Support both admin and procurement routes
+  const [, adminParams] = useRoute("/admin/suppliers/:id");
+  const [, procurementParams] = useRoute("/procurement/suppliers/:id");
+  const supplierId = adminParams?.id ?? procurementParams?.id;
 
-  const { data: supplier, isLoading } = useQuery<SupplierWithCalculated>({
+  const { data: supplier, isLoading } = useQuery<SupplierWithCalculated | null>({
     queryKey: ["/api/suppliers", supplierId],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!supplierId,
+    select: (d) => (d as SupplierWithCalculated) ?? null,
   });
 
   if (isLoading) {
